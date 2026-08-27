@@ -7,7 +7,9 @@ import io.github.soclear.oneuix.data.Preference
 import java.io.File
 
 object PreferenceProvider {
-    val preference: Preference? = try {
+    val preference: Preference? = readPreference()
+
+    fun readPreference(): Preference? = try {
         IgnoreUnknownKeysJson.decodeFromString<Preference>(getPreferenceFile().readText())
     } catch (_: Throwable) {
         // 如果一个用户启用模块后，没有点过任何偏好设置

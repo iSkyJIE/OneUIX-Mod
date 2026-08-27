@@ -300,12 +300,35 @@ class Main : IXposedHookLoadPackage, IXposedHookInitPackageResources, IXposedHoo
                     Network.showSeparateUpDownNetworkSpeeds(lpparam)
                 }
 
+                val statusBarTopPaddingDp = preference.systemUI.statusBar.statusBarTopPaddingDp
+                val statusBarBottomPaddingDp = preference.systemUI.statusBar.statusBarBottomPaddingDp
+                StatusBar.setStatusBarVerticalPadding(
+                    lpparam,
+                    statusBarTopPaddingDp,
+                    statusBarBottomPaddingDp,
+                )
+
+                val statusBarClockFormat = preference.systemUI.statusBar.statusBarClockFormat
+                val usesDoubleLineClock = preference.systemUI.statusBar.setStatusBarClockFormat &&
+                    statusBarClockFormat.contains('\n')
                 if (preference.systemUI.statusBar.setStatusBarClockFormat) {
-                    val format = preference.systemUI.statusBar.statusBarClockFormat
-                    StatusBar.setStatusBarClockFormat(lpparam, format)
+                    val doubleLineClockSize =
+                        preference.systemUI.statusBar.statusBarDoubleLineClockSize
+                    StatusBar.setStatusBarClockFormat(
+                        lpparam,
+                        statusBarClockFormat,
+                        doubleLineClockSize,
+                        preference.systemUI.statusBar.statusBarClockTextScale,
+                        preference.systemUI.statusBar.doubleLineClockGapDp,
+                        preference.systemUI.statusBar.useFold7CustomDoubleLineClockScale,
+                        preference.systemUI.statusBar.fold7DoubleLineClockTimeScale,
+                        preference.systemUI.statusBar.fold7DoubleLineClockDateScale,
+                    )
                 }
 
-                if (preference.systemUI.statusBar.setStatusBarClockTextScale) {
+                if (preference.systemUI.statusBar.setStatusBarClockTextScale &&
+                    !usesDoubleLineClock
+                ) {
                     val scale = preference.systemUI.statusBar.statusBarClockTextScale
                     StatusBar.setStatusBarClockTextScale(lpparam, scale)
                 }

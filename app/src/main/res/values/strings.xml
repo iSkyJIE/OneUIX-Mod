@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">One UI X</string>
+    <string name="app_name">One UI X · anndy999</string>
     <string name="xposed_description">Samsung One UI Extension</string>
     <string name="module_disabled_tip">Please enable this module in LSPosed</string>
     <string name="close">Close</string>
@@ -11,6 +11,10 @@
     <string name="aod">Always On Display</string>
     <string name="statusBarLeftPaddingDp_title">Modify status bar left padding</string>
     <string name="statusBarRightPaddingDp_title">Modify status bar right padding</string>
+    <string name="statusBarTopPaddingDp_title">Status bar top margin</string>
+    <string name="statusBarBottomPaddingDp_title">Status bar bottom margin</string>
+    <string name="statusBarTopPaddingDp_summary">Moves both left and right areas down: %1$.1f dp</string>
+    <string name="statusBarBottomPaddingDp_summary">Moves both left and right areas up: %1$.1f dp</string>
     <string name="setBatteryIconWidthScale_title">Set battery icon width scale factor</string>
     <string name="setBatteryIconHeightScale_title">Set battery icon height scale factor</string>
     <string name="hideBatteryPercentageSign_title">Hide battery percentage sign in status bar</string>
@@ -32,7 +36,24 @@
     <string name="immersiveModeQsTile_title">Enable Immersive mode Quick Settings tile</string>
     <string name="rootImmersiveModeQsTile_summary">Requires root access. Add the tile manually; tap it to hide or restore the status bar</string>
     <string name="setStatusBarClockFormat_title">Set status bar date and time format</string>
+    <string name="statusBarDoubleLineClockSize_title">Double-line status bar clock size</string>
+    <string name="statusBarDoubleLineClockSize_summary">Restart System UI after changing this setting. Large sizes may not fit on some devices.</string>
+    <string name="statusBarDoubleLineClockSize_small">Small</string>
+    <string name="statusBarDoubleLineClockSize_compact">Compact</string>
+    <string name="statusBarDoubleLineClockSize_standard">Standard (recommended)</string>
+    <string name="statusBarDoubleLineClockSize_large">Large</string>
+    <string name="statusBarDoubleLineClockSize_extraLarge">Extra large</string>
+    <string name="statusBarDoubleLineClockGap_title">Double-line clock line gap</string>
+    <string name="statusBarDoubleLineClockGap_summary">Current gap: %1$.1f dp; applies immediately.</string>
+    <string name="fold7CustomDoubleLineClockScale_title">Use Fold7 custom double-line sizes</string>
+    <string name="fold7CustomDoubleLineClockScale_summary">Default: time 1.00×, date 0.80×. Fold7 only; changes apply immediately.</string>
+    <string name="fold7DoubleLineClockTimeScale_title">Fold7 time scale</string>
+    <string name="fold7DoubleLineClockTimeScale_summary">Current time scale: %1$.2f×</string>
+    <string name="fold7DoubleLineClockDateScale_title">Fold7 date scale</string>
+    <string name="fold7DoubleLineClockDateScale_summary">Current date scale: %1$.2f×</string>
     <string name="setStatusBarClockTextScale_title">Set status bar clock scale factor</string>
+    <string name="restartSystemUI_success">System UI restart requested</string>
+    <string name="restartSystemUI_failed">Could not restart System UI. Grant root access and try again.</string>
     <string name="updateStatusBarClockEverySecond_title">Update status bar clock every second</string>
     <string name="updateStatusBarClockEverySecond_summary">Also sets numbers to monospaced font</string>
     <string name="hideSecureFolderStatusBarIcon_title">Hide Secure Folder status bar icon</string>

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">One UI X</string>
+    <string name="app_name">One UI X · anndy999</string>
     <string name="xposed_description">三星 One UI 扩展</string>
     <string name="module_disabled_tip">请在 LSPosed 中启用本模块</string>
     <string name="close">关闭</string>
@@ -11,6 +11,10 @@
     <string name="aod">息屏提醒</string>
     <string name="statusBarLeftPaddingDp_title">修改状态栏左边距</string>
     <string name="statusBarRightPaddingDp_title">修改状态栏右边距</string>
+    <string name="statusBarTopPaddingDp_title">状态栏顶部边距</string>
+    <string name="statusBarBottomPaddingDp_title">状态栏底部边距</string>
+    <string name="statusBarTopPaddingDp_summary">同时向下移动状态栏左侧和右侧区域：%1$.1f dp</string>
+    <string name="statusBarBottomPaddingDp_summary">同时向上移动状态栏左侧和右侧区域：%1$.1f dp</string>
     <string name="setBatteryIconWidthScale_title">设置电池图标宽度缩放倍数</string>
     <string name="setBatteryIconHeightScale_title">设置电池图标高度缩放倍数</string>
     <string name="hideBatteryPercentageSign_title">隐藏状态栏电池的百分号</string>
@@ -32,7 +36,24 @@
     <string name="immersiveModeQsTile_title">开启沉浸模式快捷设置磁贴</string>
     <string name="rootImmersiveModeQsTile_summary">需要 root 权限。请手动添加磁贴，点击后隐藏状态栏，再次点击恢复</string>
     <string name="setStatusBarClockFormat_title">设置状态栏日期时间格式</string>
+    <string name="statusBarDoubleLineClockSize_title">状态栏双行时间大小</string>
+    <string name="statusBarDoubleLineClockSize_summary">修改后请重启 System UI。较大字号在部分设备上可能空间不足。</string>
+    <string name="statusBarDoubleLineClockSize_small">小</string>
+    <string name="statusBarDoubleLineClockSize_compact">较小</string>
+    <string name="statusBarDoubleLineClockSize_standard">标准（推荐）</string>
+    <string name="statusBarDoubleLineClockSize_large">较大</string>
+    <string name="statusBarDoubleLineClockSize_extraLarge">大</string>
+    <string name="statusBarDoubleLineClockGap_title">双行时间上下间距</string>
+    <string name="statusBarDoubleLineClockGap_summary">当前间距：%1$.1f dp；修改后立即生效。</string>
+    <string name="fold7CustomDoubleLineClockScale_title">使用 Fold7 自定义双行字号</string>
+    <string name="fold7CustomDoubleLineClockScale_summary">默认：时间 1.00×，日期 0.80×。仅适用于 Fold7；修改后立即生效。</string>
+    <string name="fold7DoubleLineClockTimeScale_title">Fold7 时间字号倍率</string>
+    <string name="fold7DoubleLineClockTimeScale_summary">当前时间倍率：%1$.2f×</string>
+    <string name="fold7DoubleLineClockDateScale_title">Fold7 日期字号倍率</string>
+    <string name="fold7DoubleLineClockDateScale_summary">当前日期倍率：%1$.2f×</string>
     <string name="setStatusBarClockTextScale_title">设置状态栏时间日期缩放倍数</string>
+    <string name="restartSystemUI_success">已请求重启 System UI</string>
+    <string name="restartSystemUI_failed">无法重启 System UI，请授予 Root 权限后重试</string>
     <string name="updateStatusBarClockEverySecond_title">状态栏时间每秒更新</string>
     <string name="updateStatusBarClockEverySecond_summary">同时设置数字为等宽字体</string>
     <string name="hideSecureFolderStatusBarIcon_title">隐藏安全文件夹状态栏图标</string>
