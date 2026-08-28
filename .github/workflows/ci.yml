@@ -32,7 +32,6 @@ jobs:
 
       # 构建 Debug 包
       - name: Build Debug APK
-      - name: Build Debug APK
         run: ./gradlew assembleDebug
 
       # 重命名 Debug 包
