@@ -14,12 +14,11 @@ android {
     }
 
     defaultConfig {
-        // Keep the established anndy999 application ID so V8 can update prior builds.
-        applicationId = "io.github.anndy999.oneuix"
+        applicationId = "io.github.isky.oneuix"
         minSdk = 33
         targetSdk = 37
         versionCode = 27
-        versionName = "1.7.0-anndy999-v15-fold7-live-gap"
+        versionName = "1.0.0-iSky"
 
         ndk {
             // ABI过滤，只加载 arm 架构 64 位动态链接库
