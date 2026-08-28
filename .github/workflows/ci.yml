@@ -12,9 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Apply CNLUNAR test patch
+      - name: Apply CNLUNAR verified patch
         if: github.ref_name == 'feature/statusbar-cnlunar-test' || github.ref_name == 'feature/isky-brand-test'
-        run: python .github/scripts/apply_cnlunar.py
+        run: python .github/scripts/apply_cnlunar_verified.py
 
       - name: Set up JDK
         uses: actions/setup-java@v5
@@ -35,9 +35,6 @@ jobs:
         run: ./gradlew assembleDebug
 
       # 重命名 Debug 包
-      # github.ref_name: 分支名 (例如 main)
-      # github.run_number: Actions 的历史运行编号 (例如 15)
-      # env.SHORT_SHA: 刚刚生成的 7 位 commit 标识 (例如 a1b2c3d)
       - name: Rename APK
         run: |
           SAFE_BRANCH_NAME=$(echo "${{ github.ref_name }}" | tr '/' '-')
