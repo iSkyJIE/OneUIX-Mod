@@ -58,20 +58,29 @@ if "StatusBarClockFormatter.format(format, LocalDateTime.now())" not in status:
     if count != 1:
         raise SystemExit("Runtime block did not match; no source changed")
 
-# Fold7 clipping fix: keep the known-good fixed line spacing and optical offset.
-# The previous experimental dynamic line-spacing changed the two-line layout and
-# made bottom clipping worse. The actual clipping source is includeFontPadding=false:
-# TextView normally keeps extra ascent/descent room specifically to avoid clipping.
 old_fold7_style = "return DoubleLineClockStyle(timeScale, dateScale, 0.66f, -0.85f)"
-new_fold7_style = old_fold7_style
 if old_fold7_style not in status:
     raise SystemExit("Fold7 double-line style baseline did not match; no source changed")
 
 old_padding = "        clockTextView.includeFontPadding = false"
 new_padding = "        clockTextView.includeFontPadding = true"
-if old_padding not in status:
+if old_padding in status:
+    status = status.replace(old_padding, new_padding, 1)
+elif new_padding not in status:
     raise SystemExit("Fold7 includeFontPadding baseline did not match; no source changed")
-status = status.replace(old_padding, new_padding, 1)
+
+helper = '''\n    private fun fitDoubleLineClockLastLine(clockTextView: TextView, baseTranslationY: Float) {\n        clockTextView.post {\n            val layout = clockTextView.layout ?: return@post\n            if (layout.lineCount < 2) return@post\n\n            val lastLine = layout.lineCount - 1\n            val viewHeight = clockTextView.height\n            if (viewHeight <= 0) return@post\n\n            val top = layout.getLineTop(0)\n            val bottom = layout.getLineBottom(lastLine)\n            val availableTop = clockTextView.paddingTop\n            val availableBottom = viewHeight - clockTextView.paddingBottom\n\n            val bottomOverflow = (bottom - availableBottom).coerceAtLeast(0)\n            val topOverflow = (availableTop - top).coerceAtLeast(0)\n            val correction = bottomOverflow - topOverflow\n\n            clockTextView.translationY = baseTranslationY - correction\n        }\n    }\n'''
+if "private fun fitDoubleLineClockLastLine" not in status:
+    marker = "    private fun applyDoubleLineClockText(\n"
+    if marker not in status:
+        raise SystemExit("applyDoubleLineClockText marker not found; no source changed")
+    status = status.replace(marker, helper + "\n" + marker, 1)
+
+old_request = "        clockTextView.requestLayout()\n        clockTextView.invalidate()"
+new_request = "        clockTextView.requestLayout()\n        clockTextView.invalidate()\n        fitDoubleLineClockLastLine(clockTextView, doubleLineClockStyle.opticalTranslationYDp * density)"
+if old_request not in status:
+    raise SystemExit("Double-line requestLayout baseline did not match; no source changed")
+status = status.replace(old_request, new_request, 1)
 
 STATUSBAR.write_text(status, encoding="utf-8")
 
@@ -114,5 +123,7 @@ assert "StatusBarClockFormatter.format(format, LocalDateTime.now())" in status_c
 assert "return DoubleLineClockStyle(timeScale, dateScale, 0.66f, -0.85f)" in status_check
 assert "clockTextView.includeFontPadding = true" in status_check
 assert "clockTextView.includeFontPadding = false" not in status_check
+assert "private fun fitDoubleLineClockLastLine" in status_check
+assert "fitDoubleLineClockLastLine(clockTextView" in status_check
 assert "StatusBarClockFormatter.format(" in detail_check
-print("Verified: custom clock formatter runtime + preview patched + Fold7 fixed baseline + font padding enabled")
+print("Verified: custom clock formatter runtime + preview patched + Fold7 fixed baseline + font padding + last-line fit")
