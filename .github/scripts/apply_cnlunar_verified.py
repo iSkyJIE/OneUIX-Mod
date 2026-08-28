@@ -13,7 +13,6 @@ if "import io.github.soclear.oneuix.hook.util.StatusBarClockFormatter" not in st
         raise SystemExit("Missing StatusBar PreferenceProvider import")
     status = status.replace(marker, marker + IMPORT, 1)
 
-# Replace only the formatter selection inside setStatusBarClockFormat().
 old_runtime = re.compile(
     r"        val dateTimeFormatter = try \{\n"
     r"            DateTimeFormatter\.ofPattern\(format\)\n"
@@ -59,19 +58,21 @@ if "StatusBarClockFormatter.format(format, LocalDateTime.now())" not in status:
     if count != 1:
         raise SystemExit("Runtime block did not match; no source changed")
 
-# Fold 7 double-line text is clipped slightly at the bottom on the fixed-height
-# Samsung status-bar viewport. Move only the two-line clock upward by 0.4dp.
-# This does not change font size, line count, or the status-bar container height.
+# Fold7: keep the optical offset, but make line spacing follow the selected
+# second-line scale. The previous fixed 0.66 multiplier was the clipping point:
+# when the second line grew beyond roughly 0.65x, its glyph metrics could exceed
+# the compressed line box. Android documents that setLineSpacing(mult) changes
+# the actual line height, while RelativeSizeSpan changes text metrics.
 old_fold7_style = "return DoubleLineClockStyle(timeScale, dateScale, 0.66f, -0.85f)"
-new_fold7_style = "return DoubleLineClockStyle(timeScale, dateScale, 0.66f, -1.25f)"
+new_fold7_style = '''val lineSpacing = (dateScale / timeScale).coerceIn(0.66f, 1.0f)
+            return DoubleLineClockStyle(timeScale, dateScale, lineSpacing, -1.25f)'''
 if old_fold7_style in status:
     status = status.replace(old_fold7_style, new_fold7_style, 1)
-elif new_fold7_style not in status:
+elif "val lineSpacing = (dateScale / timeScale).coerceIn(0.66f, 1.0f)" not in status:
     raise SystemExit("Fold7 double-line style block did not match; no source changed")
 
 STATUSBAR.write_text(status, encoding="utf-8")
 
-# Preview: use the same formatter and therefore the same custom grammar.
 detail = DETAIL.read_text(encoding="utf-8")
 if "import io.github.soclear.oneuix.hook.util.StatusBarClockFormatter" not in detail:
     marker = "import io.github.soclear.oneuix.ui.component.SwitchItem\n"
@@ -105,10 +106,10 @@ if "StatusBarClockFormatter.format(" not in detail:
         raise SystemExit("Preview block did not match; no source changed")
 DETAIL.write_text(detail, encoding="utf-8")
 
-# Hard verification: the build must fail if either patch is absent.
 status_check = STATUSBAR.read_text(encoding="utf-8")
 detail_check = DETAIL.read_text(encoding="utf-8")
 assert "StatusBarClockFormatter.format(format, LocalDateTime.now())" in status_check
-assert "return DoubleLineClockStyle(timeScale, dateScale, 0.66f, -1.25f)" in status_check
+assert "val lineSpacing = (dateScale / timeScale).coerceIn(0.66f, 1.0f)" in status_check
+assert "return DoubleLineClockStyle(timeScale, dateScale, lineSpacing, -1.25f)" in status_check
 assert "StatusBarClockFormatter.format(" in detail_check
-print("Verified: custom clock formatter runtime + preview patched + Fold7 double-line optical offset adjusted")
+print("Verified: custom clock formatter runtime + preview patched + Fold7 dynamic double-line line spacing + optical offset")
