@@ -14,12 +14,11 @@ android {
     }
 
     defaultConfig {
-        // Keep the established anndy999 application ID so V8 can update prior builds.
-        applicationId = "io.github.anndy999.oneuix"
+        applicationId = "io.github.isky.oneuix"
         minSdk = 33
         targetSdk = 37
         versionCode = 27
-        versionName = "1.7.0-anndy999-v15-fold7-live-gap"
+        versionName = "1.0.0-iSky"
 
         ndk {
             // ABI过滤，只加载 arm 架构 64 位动态链接库
@@ -72,9 +71,6 @@ android {
     androidResources {
         generateLocaleConfig = true
         localeFilters += listOf("en", "zh", "fr", "ru", "ko")
-        // 用于添加模块资源到宿主。
-        // 默认情况下，所有安卓应用的资源 ID 都是以 0x7f 开头
-        // 为防止冲突，自定义资源 ID 前缀（--package-id），避开 0x7f 防止冲突
         additionalParameters += listOf(
             "--allow-reserved-package-id",
             "--package-id",
@@ -84,7 +80,6 @@ android {
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -93,17 +88,14 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-
     compileOnly(libs.xposed.api)
     compileOnly(project(":stub"))
-
     implementation(libs.dexkit)
     implementation(libs.adaptive)
     implementation(libs.adaptive.layout)
     implementation(libs.adaptive.navigation)
     implementation(libs.datastore)
     implementation(libs.kotlinx.serialization.json)
-
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
