@@ -58,18 +58,20 @@ if "StatusBarClockFormatter.format(format, LocalDateTime.now())" not in status:
     if count != 1:
         raise SystemExit("Runtime block did not match; no source changed")
 
-# Fold7: keep the optical offset, but make line spacing follow the selected
-# second-line scale. The previous fixed 0.66 multiplier was the clipping point:
-# when the second line grew beyond roughly 0.65x, its glyph metrics could exceed
-# the compressed line box. Android documents that setLineSpacing(mult) changes
-# the actual line height, while RelativeSizeSpan changes text metrics.
+# Fold7 clipping fix: keep the known-good fixed line spacing and optical offset.
+# The previous experimental dynamic line-spacing changed the two-line layout and
+# made bottom clipping worse. The actual clipping source is includeFontPadding=false:
+# TextView normally keeps extra ascent/descent room specifically to avoid clipping.
 old_fold7_style = "return DoubleLineClockStyle(timeScale, dateScale, 0.66f, -0.85f)"
-new_fold7_style = '''val lineSpacing = (dateScale / timeScale).coerceIn(0.66f, 1.0f)
-            return DoubleLineClockStyle(timeScale, dateScale, lineSpacing, -1.25f)'''
-if old_fold7_style in status:
-    status = status.replace(old_fold7_style, new_fold7_style, 1)
-elif "val lineSpacing = (dateScale / timeScale).coerceIn(0.66f, 1.0f)" not in status:
-    raise SystemExit("Fold7 double-line style block did not match; no source changed")
+new_fold7_style = old_fold7_style
+if old_fold7_style not in status:
+    raise SystemExit("Fold7 double-line style baseline did not match; no source changed")
+
+old_padding = "        clockTextView.includeFontPadding = false"
+new_padding = "        clockTextView.includeFontPadding = true"
+if old_padding not in status:
+    raise SystemExit("Fold7 includeFontPadding baseline did not match; no source changed")
+status = status.replace(old_padding, new_padding, 1)
 
 STATUSBAR.write_text(status, encoding="utf-8")
 
@@ -109,7 +111,8 @@ DETAIL.write_text(detail, encoding="utf-8")
 status_check = STATUSBAR.read_text(encoding="utf-8")
 detail_check = DETAIL.read_text(encoding="utf-8")
 assert "StatusBarClockFormatter.format(format, LocalDateTime.now())" in status_check
-assert "val lineSpacing = (dateScale / timeScale).coerceIn(0.66f, 1.0f)" in status_check
-assert "return DoubleLineClockStyle(timeScale, dateScale, lineSpacing, -1.25f)" in status_check
+assert "return DoubleLineClockStyle(timeScale, dateScale, 0.66f, -0.85f)" in status_check
+assert "clockTextView.includeFontPadding = true" in status_check
+assert "clockTextView.includeFontPadding = false" not in status_check
 assert "StatusBarClockFormatter.format(" in detail_check
-print("Verified: custom clock formatter runtime + preview patched + Fold7 dynamic double-line line spacing + optical offset")
+print("Verified: custom clock formatter runtime + preview patched + Fold7 fixed baseline + font padding enabled")
