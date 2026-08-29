@@ -1,6 +1,12 @@
 name: Test DoubleLine ClipChildren
 
 on:
+  push:
+    branches:
+      - fix/doubleline-linebox-height
+    paths:
+      - '.github/workflows/test-doubleline-clipchildren.yml'
+      - 'app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt'
   workflow_dispatch:
 
 jobs:
@@ -29,6 +35,8 @@ jobs:
           new = old + '(clockTextView.parent as? ViewGroup)?.clipChildren = false\n'
           if s.count(old) != 1:
               raise SystemExit(f'Expected exactly one target, found {s.count(old)}')
+          if '(clockTextView.parent as? ViewGroup)?.clipChildren = false' in s:
+              raise SystemExit('Experiment already present in source; refusing duplicate patch')
           p.write_text(s.replace(old, new, 1))
           PY
           git diff --check
