@@ -1,57 +1,57 @@
-name: Restore CNLUNAR direct wiring
+name: Test CNLUNAR wiring APK
 
 on:
   push:
     branches:
       - fix/cnlunar-runtime-final
 
-permissions:
-  contents: write
-
 jobs:
-  restore:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Patch verified source wiring
+      - name: Apply verified CNLUNAR wiring in build workspace
         run: |
           python3 - <<'PY'
           from pathlib import Path
           status = Path('app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt')
           detail = Path('app/src/main/java/io/github/soclear/oneuix/ui/category/DetailPaneSystemUI.kt')
-          s = status.read_text()
-          d = detail.read_text()
+          s = status.read_text(); d = detail.read_text()
           imp = 'import io.github.soclear.oneuix.hook.util.StatusBarClockFormatter\n'
           if 'StatusBarClockFormatter.format(format, LocalDateTime.now())' not in s:
-              marker = 'import io.github.soclear.oneuix.hook.util.PreferenceProvider\n'
-              s = s.replace(marker, marker + imp, 1)
+              s = s.replace('import io.github.soclear.oneuix.hook.util.PreferenceProvider\n', 'import io.github.soclear.oneuix.hook.util.PreferenceProvider\n'+imp, 1)
               old = '''        val dateTimeFormatter = try {\n            DateTimeFormatter.ofPattern(format)\n        } catch (_: Throwable) {\n            DateTimeFormatter.ofPattern("HH:mm")\n        }\n        updateDoubleLineClockRuntimeConfig(\n            doubleLineClockSize,\n            legacyDoubleLinePresetScale,\n            doubleLineClockGapDp,\n            useFold7CustomScale,\n            fold7TimeScale,\n            fold7DateScale,\n        )\n        observeStatusBarPreference()\n        setStatusBarClockText(\n            loadPackageParam,\n        ) {\n            dateTimeFormatter.format(LocalDateTime.now())\n        }'''
               new = '''        updateDoubleLineClockRuntimeConfig(\n            doubleLineClockSize,\n            legacyDoubleLinePresetScale,\n            doubleLineClockGapDp,\n            useFold7CustomScale,\n            fold7TimeScale,\n            fold7DateScale,\n        )\n        observeStatusBarPreference()\n        setStatusBarClockText(\n            loadPackageParam,\n        ) {\n            runCatching {\n                StatusBarClockFormatter.format(format, LocalDateTime.now())\n            }.getOrElse {\n                DateTimeFormatter.ofPattern("HH:mm").format(LocalDateTime.now())\n            }\n        }'''
               if old not in s: raise SystemExit('runtime block not found')
-              s = s.replace(old, new, 1)
-              status.write_text(s)
+              status.write_text(s.replace(old,new,1))
           if 'StatusBarClockFormatter.format(' not in d:
-              marker = 'import io.github.soclear.oneuix.ui.component.SwitchItem\n'
-              d = d.replace(marker, marker + imp, 1)
+              d = d.replace('import io.github.soclear.oneuix.ui.component.SwitchItem\n', 'import io.github.soclear.oneuix.ui.component.SwitchItem\n'+imp, 1)
               old = '''                            label = try {\n                                DateTimeFormatter\n                                    .ofPattern(tempDataTimeFormat)\n                                    .format(LocalDateTime.now())\n                            } catch (_: Throwable) {\n                                right = false\n                                "error"\n                            }'''
               new = '''                            label = try {\n                                StatusBarClockFormatter.format(\n                                    tempDataTimeFormat,\n                                    LocalDateTime.now()\n                                )\n                            } catch (_: Throwable) {\n                                right = false\n                                "error"\n                            }'''
               if old not in d: raise SystemExit('preview block not found')
-              d = d.replace(old, new, 1)
-              detail.write_text(d)
-          s = status.read_text(); d = detail.read_text()
+              detail.write_text(d.replace(old,new,1))
+          s=status.read_text(); d=detail.read_text()
           assert 'StatusBarClockFormatter.format(format, LocalDateTime.now())' in s
           assert 'StatusBarClockFormatter.format(' in d
-          assert 'coerceIn(0.50f, 1.10f)' in s
-          assert '0.66f' in s
-          assert '-0.85f' in s
+          assert 'coerceIn(0.50f, 1.10f)' in s and '0.66f' in s and '-0.85f' in s
           assert '-1.25f' not in s and '-1.25f' not in d
           print('VERIFIED')
           PY
-      - name: Commit only source files
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: zulu
+          java-version: '25'
+          cache: gradle
+      - name: Build Debug APK
         run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt app/src/main/java/io/github/soclear/oneuix/ui/category/DetailPaneSystemUI.kt
-          git diff --cached --quiet || (git commit -m 'fix: restore CNLUNAR runtime and preview wiring' && git push)
+          chmod +x gradlew
+          ./gradlew assembleDebug
+      - name: Upload patched APK
+        uses: actions/upload-artifact@v7
+        with:
+          path: app/build/outputs/apk/debug/*.apk
+          retention-days: 15
+          archive: false
