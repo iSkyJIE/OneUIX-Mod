@@ -1,0 +1,40 @@
+name: Restore CNLUNAR wiring (isolated)
+
+on:
+  push:
+    branches:
+      - test/fold7-doubleline-clean-20260829
+
+permissions:
+  contents: write
+
+jobs:
+  restore:
+    if: ${{ !startsWith(github.event.head_commit.message, 'ci: restore CNLUNAR wiring') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact branch commit
+        uses: actions/checkout@v4
+
+      - name: Run isolated CNLUNAR source patch
+        run: python3 .github/scripts/apply_cnlunar_verified.py
+
+      - name: Verify only intended wiring/layout invariants
+        run: |
+          grep -F 'StatusBarClockFormatter.format(format, LocalDateTime.now())' app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt
+          grep -F 'StatusBarClockFormatter.format(' app/src/main/java/io/github/soclear/oneuix/ui/category/DetailPaneSystemUI.kt
+          ! grep -F -- '-1.25f' app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt
+          grep -F '0.50f' app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt
+          grep -F '1.10f' app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt
+
+      - name: Commit source wiring only
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt app/src/main/java/io/github/soclear/oneuix/ui/category/DetailPaneSystemUI.kt
+          if git diff --cached --quiet; then
+            echo 'No source wiring changes needed'
+            exit 0
+          fi
+          git commit -m 'ci: restore CNLUNAR wiring without layout changes'
+          git push
