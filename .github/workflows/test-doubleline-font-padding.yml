@@ -1,0 +1,63 @@
+name: Test DoubleLine Font Padding
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: fix/doubleline-font-crop
+
+      - name: Apply single-variable font padding test
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt')
+          s = p.read_text()
+          old = 'clockTextView.includeFontPadding = false'
+          new = 'clockTextView.includeFontPadding = true'
+          count = s.count(old)
+          if count != 1:
+              raise SystemExit(f'Expected exactly one target, found {count}')
+          p.write_text(s.replace(old, new, 1))
+          print('Applied: includeFontPadding false -> true (double-line path only)')
+          PY
+          git diff --check
+          git diff -- app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Make Gradle executable
+        run: chmod +x ./gradlew
+
+      - name: Build Debug APK
+        run: ./gradlew :app:assembleDebug --no-daemon
+
+      - name: Commit tested change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt
+          git commit -m 'test: preserve glyph padding for double-line clock'
+          git push origin HEAD:fix/doubleline-font-crop
+
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk OneUIX-Debug-doubleline-font-padding.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: OneUIX-Debug-doubleline-font-padding
+          path: OneUIX-Debug-doubleline-font-padding.apk
+          if-no-files-found: error
