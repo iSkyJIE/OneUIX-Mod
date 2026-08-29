@@ -12,10 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Apply CNLUNAR verified patch
-        if: github.ref_name == 'feature/statusbar-cnlunar-test' || github.ref_name == 'feature/isky-brand-test'
-        run: python .github/scripts/apply_cnlunar_verified.py
-
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
@@ -42,8 +38,8 @@ jobs:
 
       # 上传产物
       - name: Upload APK
-        uses: actions/upload-artifact@v7
-        with:
-          path: app/build/outputs/apk/debug/*.apk
-          retention-days: 15
-          archive: false
+      uses: actions/upload-artifact@v7
+      with:
+        path: app/build/outputs/apk/debug/*.apk
+        retention-days: 15
+        archive: false
