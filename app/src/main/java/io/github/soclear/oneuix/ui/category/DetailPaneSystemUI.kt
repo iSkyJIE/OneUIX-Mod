@@ -45,6 +45,7 @@ import io.github.soclear.oneuix.data.Preference
 import io.github.soclear.oneuix.ui.SettingViewModel
 import io.github.soclear.oneuix.ui.component.SelectItem
 import io.github.soclear.oneuix.ui.component.SwitchItem
+import io.github.soclear.oneuix.hook.util.StatusBarClockFormatter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -388,9 +389,10 @@ fun DetailPaneSystemUI(
                         onClick = {
                             var right = true
                             label = try {
-                                DateTimeFormatter
-                                    .ofPattern(tempDataTimeFormat)
-                                    .format(LocalDateTime.now())
+                                StatusBarClockFormatter.format(
+                                    tempDataTimeFormat,
+                                    LocalDateTime.now()
+                                )
                             } catch (_: Throwable) {
                                 right = false
                                 "error"

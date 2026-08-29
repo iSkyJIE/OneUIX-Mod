@@ -36,6 +36,7 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
 import io.github.soclear.oneuix.data.ONE_UI_VERSION
 import io.github.soclear.oneuix.data.Package
 import io.github.soclear.oneuix.hook.util.PreferenceProvider
+import io.github.soclear.oneuix.hook.util.StatusBarClockFormatter
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.WeakHashMap
@@ -450,11 +451,6 @@ object StatusBar {
         fold7DateScale: Float,
     ) {
         if (loadPackageParam.packageName != Package.SYSTEMUI) return
-        val dateTimeFormatter = try {
-            DateTimeFormatter.ofPattern(format)
-        } catch (_: Throwable) {
-            DateTimeFormatter.ofPattern("HH:mm")
-        }
         updateDoubleLineClockRuntimeConfig(
             doubleLineClockSize,
             legacyDoubleLinePresetScale,
@@ -467,7 +463,11 @@ object StatusBar {
         setStatusBarClockText(
             loadPackageParam,
         ) {
-            dateTimeFormatter.format(LocalDateTime.now())
+            runCatching {
+                StatusBarClockFormatter.format(format, LocalDateTime.now())
+            }.getOrElse {
+                DateTimeFormatter.ofPattern("HH:mm").format(LocalDateTime.now())
+            }
         }
     }
 
