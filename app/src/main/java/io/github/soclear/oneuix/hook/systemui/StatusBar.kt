@@ -214,10 +214,10 @@ object StatusBar {
         // Custom values are explicit user choices, never height-based fitting.
         if (Build.MODEL.startsWith("SM-F966", ignoreCase = true)) {
             val timeScale = if (useFold7CustomScale) {
-                fold7TimeScale.coerceIn(0.70f, 1.10f)
+                fold7TimeScale.coerceIn(0.50f, 1.10f)
             } else 1.00f
             val dateScale = if (useFold7CustomScale) {
-                fold7DateScale.coerceIn(0.50f, 0.90f)
+                fold7DateScale.coerceIn(0.50f, 1.10f)
             } else 0.80f
             return DoubleLineClockStyle(timeScale, dateScale, 0.66f, -0.85f)
         }

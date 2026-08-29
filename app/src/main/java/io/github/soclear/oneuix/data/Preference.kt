@@ -60,7 +60,7 @@ data class Preference(
             val doubleLineClockGapDp: Float = 1f,
             val useFold7CustomDoubleLineClockScale: Boolean = false,
             val fold7DoubleLineClockTimeScale: Float = 1f,
-            val fold7DoubleLineClockDateScale: Float = 0.8f,
+            val fold7DoubleLineClockDateScale: Float = 1f,
             val updateStatusBarClockEverySecond: Boolean = false,
             val hideSecureFolderStatusBarIcon: Boolean = false,
             val physicalEsimAdapterWorkaround: Boolean = false,

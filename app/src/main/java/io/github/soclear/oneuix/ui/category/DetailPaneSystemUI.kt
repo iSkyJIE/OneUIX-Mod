@@ -461,7 +461,7 @@ fun DetailPaneSystemUI(
                                 value = timeScale,
                                 onValueChange = { timeScale = it },
                                 modifier = Modifier.padding(horizontal = 16.dp),
-                                valueRange = 0.70f..1.10f,
+                                valueRange = 0.50f..1.10f,
                                 steps = 39,
                                 onValueChangeFinished = {
                                     onEvent(
@@ -499,7 +499,7 @@ fun DetailPaneSystemUI(
                                 value = dateScale,
                                 onValueChange = { dateScale = it },
                                 modifier = Modifier.padding(horizontal = 16.dp),
-                                valueRange = 0.50f..0.90f,
+                                valueRange = 0.50f..1.10f,
                                 steps = 39,
                                 onValueChangeFinished = {
                                     onEvent(
