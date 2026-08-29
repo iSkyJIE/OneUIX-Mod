@@ -218,7 +218,7 @@ object StatusBar {
             } else 1.00f
             val dateScale = if (useFold7CustomScale) {
                 fold7DateScale.coerceIn(0.50f, 1.10f)
-            } else 0.80f
+            } else 1.00f
             return DoubleLineClockStyle(timeScale, dateScale, 0.66f, -0.85f)
         }
         return when (size) {
