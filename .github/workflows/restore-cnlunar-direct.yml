@@ -1,0 +1,85 @@
+name: Restore CNLUNAR direct source
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply verified historical runtime and preview wiring
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          status_path = Path("app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt")
+          detail_path = Path("app/src/main/java/io/github/soclear/oneuix/ui/category/DetailPaneSystemUI.kt")
+          imp = "import io.github.soclear.oneuix.hook.util.StatusBarClockFormatter\n"
+          status = status_path.read_text(encoding="utf-8")
+          if "import io.github.soclear.oneuix.hook.util.StatusBarClockFormatter" not in status:
+              marker = "import io.github.soclear.oneuix.hook.util.PreferenceProvider\n"
+              if marker not in status: raise SystemExit("Missing StatusBar PreferenceProvider import")
+              status = status.replace(marker, marker + imp, 1)
+          old_runtime = re.compile(r"        val dateTimeFormatter = try \{\n            DateTimeFormatter\.ofPattern\(format\)\n        \} catch \(_:\ Throwable\) \{\n            DateTimeFormatter\.ofPattern\(\"HH:mm\"\)\n        \}\n        updateDoubleLineClockRuntimeConfig\(\n            doubleLineClockSize,\n            legacyDoubleLinePresetScale,\n            doubleLineClockGapDp,\n            useFold7CustomScale,\n            fold7TimeScale,\n            fold7DateScale,\n        \)\n        observeStatusBarPreference\(\)\n        setStatusBarClockText\(\n            loadPackageParam,\n        \) \{\n            dateTimeFormatter\.format\(LocalDateTime\.now\(\)\)\n        \}", re.S)
+          new_runtime = '''        updateDoubleLineClockRuntimeConfig(
+            doubleLineClockSize,
+            legacyDoubleLinePresetScale,
+            doubleLineClockGapDp,
+            useFold7CustomScale,
+            fold7TimeScale,
+            fold7DateScale,
+        )
+        observeStatusBarPreference()
+        setStatusBarClockText(
+            loadPackageParam,
+        ) {
+            runCatching {
+                StatusBarClockFormatter.format(format, LocalDateTime.now())
+            }.getOrElse {
+                DateTimeFormatter.ofPattern("HH:mm").format(LocalDateTime.now())
+            }
+        }'''
+          if "StatusBarClockFormatter.format(format, LocalDateTime.now())" not in status:
+              status, count = old_runtime.subn(new_runtime, status, count=1)
+              if count != 1: raise SystemExit("Runtime block did not match")
+          status_path.write_text(status, encoding="utf-8")
+          detail = detail_path.read_text(encoding="utf-8")
+          if "import io.github.soclear.oneuix.hook.util.StatusBarClockFormatter" not in detail:
+              marker = "import io.github.soclear.oneuix.ui.component.SwitchItem\n"
+              if marker not in detail: raise SystemExit("Missing DetailPane SwitchItem import")
+              detail = detail.replace(marker, marker + imp, 1)
+          old_preview = re.compile(r"                            label = try \{\n                                DateTimeFormatter\n                                    \.ofPattern\(tempDataTimeFormat\)\n                                    \.format\(LocalDateTime\.now\(\)\)\n                            \} catch \(_:\ Throwable\) \{\n                                right = false\n                                \"error\"\n                            \}", re.S)
+          new_preview = '''                            label = try {
+                                StatusBarClockFormatter.format(
+                                    tempDataTimeFormat,
+                                    LocalDateTime.now()
+                                )
+                            } catch (_: Throwable) {
+                                right = false
+                                "error"
+                            }'''
+          if "StatusBarClockFormatter.format(" not in detail:
+              detail, count = old_preview.subn(new_preview, detail, count=1)
+              if count != 1: raise SystemExit("Preview block did not match")
+          detail_path.write_text(detail, encoding="utf-8")
+          s = status_path.read_text(encoding="utf-8")
+          d = detail_path.read_text(encoding="utf-8")
+          for needle in ["StatusBarClockFormatter.format(format, LocalDateTime.now())", "coerceIn(0.50f, 1.10f)", "0.66f", "-0.85f"]:
+              if needle not in s: raise SystemExit(f"Missing verification: {needle}")
+          if "StatusBarClockFormatter.format(" not in d: raise SystemExit("Missing preview verification")
+          if "-1.25f" in s or "-1.25f" in d: raise SystemExit("Forbidden -1.25f detected")
+          print("Verified direct CNLUNAR wiring; Fold7 layout values preserved")
+      - name: Commit only source wiring
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt app/src/main/java/io/github/soclear/oneuix/ui/category/DetailPaneSystemUI.kt
+          if git diff --cached --quiet; then echo "No source changes"; exit 0; fi
+          git commit -m "fix: restore CNLUNAR runtime and preview wiring"
+          git push
