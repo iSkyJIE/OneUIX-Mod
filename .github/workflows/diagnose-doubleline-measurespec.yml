@@ -1,0 +1,64 @@
+name: Diagnose DoubleLine MeasureSpec
+
+on:
+  push:
+    branches:
+      - fix/doubleline-linebox-height
+    paths:
+      - '.github/workflows/diagnose-doubleline-measurespec.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout experiment branch
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Inject MeasureSpec diagnostics
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt')
+          s = p.read_text()
+
+          decl = '''    private val measureSpecHookedClasses = mutableSetOf<Class<*>>()\n'''
+          anchor = '''    private val statusBarViews = WeakHashMap<View, Unit>()\n'''
+          if decl.strip() not in s:
+              if s.count(anchor) != 1:
+                  raise SystemExit(f'Expected exactly one declaration anchor, found {s.count(anchor)}')
+              s = s.replace(anchor, anchor + decl, 1)
+
+          old = '''        clockTextView.requestLayout()\n        clockTextView.invalidate()'''
+          new = '''        clockTextView.requestLayout()\n        clockTextView.invalidate()\n        clockTextView.post {\n            try {\n                fun specMode(spec: Int): String = when (View.MeasureSpec.getMode(spec)) {\n                    View.MeasureSpec.EXACTLY -> "EXACTLY"\n                    View.MeasureSpec.AT_MOST -> "AT_MOST"\n                    View.MeasureSpec.UNSPECIFIED -> "UNSPECIFIED"\n                    else -> "UNKNOWN"\n                }\n                fun idName(v: View): String = try {\n                    if (v.id != View.NO_ID) v.resources.getResourceName(v.id) else "NO_ID"\n                } catch (_: Throwable) {\n                    "id=${v.id}"\n                }\n                fun describe(v: View): String {\n                    val lp = v.layoutParams\n                    return "class=${v.javaClass.name},id=${idName(v)}," +\n                        "measured=${v.measuredWidth}x${v.measuredHeight},size=${v.width}x${v.height}," +\n                        "lp=${lp?.width}x${lp?.height},top=${v.top},bottom=${v.bottom}," +\n                        "padding=${v.paddingTop}/${v.paddingBottom},y=${v.y},translationY=${v.translationY}"\n                }\n                fun installMeasureHook(target: View) {\n                    val clazz = target.javaClass\n                    synchronized(measureSpecHookedClasses) {\n                        if (!measureSpecHookedClasses.add(clazz)) return\n                    }\n                    hookAllMethods(clazz, "onMeasure", object : XC_MethodHook() {\n                        override fun beforeHookedMethod(param: MethodHookParam) {\n                            val v = param.thisObject as? View ?: return\n                            if (v !== clockTextView && idName(v) != "com.android.systemui:id/status_bar_contents") return\n                            val widthSpec = param.args.getOrNull(0) as? Int ?: return\n                            val heightSpec = param.args.getOrNull(1) as? Int ?: return\n                            XposedBridge.log(\n                                "[OneUIX-MEASURE] BEFORE ${describe(v)}," +\n                                    "widthSpec=${specMode(widthSpec)}:${View.MeasureSpec.getSize(widthSpec)}," +\n                                    "heightSpec=${specMode(heightSpec)}:${View.MeasureSpec.getSize(heightSpec)}"\n                            )\n                        }\n                        override fun afterHookedMethod(param: MethodHookParam) {\n                            val v = param.thisObject as? View ?: return\n                            if (v !== clockTextView && idName(v) != "com.android.systemui:id/status_bar_contents") return\n                            val widthSpec = param.args.getOrNull(0) as? Int ?: return\n                            val heightSpec = param.args.getOrNull(1) as? Int ?: return\n                            XposedBridge.log(\n                                "[OneUIX-MEASURE] AFTER ${describe(v)}," +\n                                    "widthSpec=${specMode(widthSpec)}:${View.MeasureSpec.getSize(widthSpec)}," +\n                                    "heightSpec=${specMode(heightSpec)}:${View.MeasureSpec.getSize(heightSpec)}"\n                            )\n                        }\n                    })\n                }\n\n                installMeasureHook(clockTextView)\n                var parent = clockTextView.parent as? View\n                var depth = 1\n                while (parent != null && depth < 8) {\n                    XposedBridge.log("[OneUIX-MEASURE] HIER depth=$depth ${describe(parent)}")\n                    if (idName(parent) == "com.android.systemui:id/status_bar_contents") {\n                        installMeasureHook(parent)\n                    }\n                    parent = parent.parent as? View\n                    depth++\n                }\n            } catch (t: Throwable) {\n                XposedBridge.log("[OneUIX-MEASURE] failed: $t")\n            }\n        }'''
+          if s.count(old) != 1:
+              raise SystemExit(f'Expected exactly one insertion point, found {s.count(old)}')
+          p.write_text(s.replace(old, new, 1))
+          PY
+          git diff --check
+
+      - name: Build Debug APK
+        run: ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Get Short SHA
+        id: sha
+        run: echo "short_sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Copy APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk "OneUIX-Debug-measurespec-Run${{ github.run_number }}-${{ steps.sha.outputs.short_sha }}.apk"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: OneUIX-Debug-measurespec-Run${{ github.run_number }}-${{ steps.sha.outputs.short_sha }}
+          path: OneUIX-Debug-measurespec-Run${{ github.run_number }}-${{ steps.sha.outputs.short_sha }}.apk
+          retention-days: 90
