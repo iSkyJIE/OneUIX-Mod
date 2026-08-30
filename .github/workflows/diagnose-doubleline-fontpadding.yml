@@ -1,0 +1,69 @@
+name: Diagnose DoubleLine FontPadding
+
+on:
+  push:
+    branches:
+      - fix/doubleline-linebox-height
+    paths:
+      - '.github/workflows/diagnose-doubleline-fontpadding.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout experiment branch
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Inject single-variable font padding diagnostic
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt')
+          s = p.read_text()
+          old = '''        clockTextView.includeFontPadding = false'''
+          new = '''        clockTextView.includeFontPadding = true'''
+          if s.count(old) != 1:
+              raise SystemExit(f'Expected exactly one font padding assignment, found {s.count(old)}')
+          p.write_text(s.replace(old, new, 1))
+          PY
+
+      - name: Inject FontMetrics diagnostics
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt')
+          s = p.read_text()
+          old = '''        clockTextView.requestLayout()\n        clockTextView.invalidate()'''
+          new = '''        clockTextView.requestLayout()\n        clockTextView.invalidate()\n        clockTextView.post {\n            try {\n                val layout = clockTextView.layout\n                val fm = clockTextView.paint.fontMetricsInt\n                val lineCount = layout?.lineCount ?: -1\n                val line1 = if (layout != null && lineCount > 1) {\n                    "top=${layout.getLineTop(1)},bottom=${layout.getLineBottom(1)},baseline=${layout.getLineBaseline(1)},ascent=${layout.getLineAscent(1)},descent=${layout.getLineDescent(1)}"\n                } else {\n                    "unavailable"\n                }\n                val lineBounds = if (lineCount > 1) {\n                    val r = android.graphics.Rect()\n                    clockTextView.getLineBounds(1, r)\n                    r.toShortString()\n                } else {\n                    "unavailable"\n                }\n                val drawingBox = try {\n                    val method = layout?.javaClass?.getMethod("computeDrawingBoundingBox")\n                    method?.invoke(layout)?.toString() ?: "unavailable"\n                } catch (_: Throwable) {\n                    "unavailable"\n                }\n                XposedBridge.log(\n                    "[OneUIX-DIAG] fontPadding=true " +\n                        "timeScale=${doubleLineClockStyle.timeScale},dateScale=${doubleLineClockStyle.dateScale}," +\n                        "textSize=${clockTextView.textSize},measuredH=${clockTextView.measuredHeight},height=${clockTextView.height}," +\n                        "paddingT=${clockTextView.paddingTop},paddingB=${clockTextView.paddingBottom}," +\n                        "gravity=${clockTextView.gravity},translationY=${clockTextView.translationY}," +\n                        "lineSpacingExtra=${clockTextView.lineSpacingExtra},lineSpacingMult=${clockTextView.lineSpacingMultiplier}," +\n                        "paintFM[top=${fm.top},ascent=${fm.ascent},descent=${fm.descent},bottom=${fm.bottom}]," +\n                        "lineCount=$lineCount,line1={$line1},lineBounds=$lineBounds,drawingBox=$drawingBox"\n                )\n            } catch (t: Throwable) {\n                XposedBridge.log("[OneUIX-DIAG] fontPadding=true failed: $t")\n            }\n        }'''
+          if s.count(old) != 1:
+              raise SystemExit(f'Expected exactly one diagnostic insertion point, found {s.count(old)}')
+          p.write_text(s.replace(old, new, 1))
+          PY
+          git diff --check
+
+      - name: Build Debug APK
+        run: ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Get Short SHA
+        id: sha
+        run: echo "short_sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Copy APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk "OneUIX-Debug-fontpadding-diagnostic-Run${{ github.run_number }}-${{ steps.sha.outputs.short_sha }}.apk"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: OneUIX-Debug-fontpadding-diagnostic-Run${{ github.run_number }}-${{ steps.sha.outputs.short_sha }}
+          path: OneUIX-Debug-fontpadding-diagnostic-Run${{ github.run_number }}-${{ steps.sha.outputs.short_sha }}.apk
+          retention-days: 90
