@@ -1,0 +1,56 @@
+name: Diagnose DoubleLine View Hierarchy
+
+on:
+  push:
+    branches:
+      - fix/doubleline-linebox-height
+    paths:
+      - '.github/workflows/diagnose-doubleline-viewhierarchy.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout experiment branch
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Inject View hierarchy diagnostics
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt')
+          s = p.read_text()
+          old = '''        clockTextView.requestLayout()\n        clockTextView.invalidate()'''
+          new = '''        clockTextView.requestLayout()\n        clockTextView.invalidate()\n        clockTextView.post {\n            try {\n                fun describeView(v: View): String {\n                    val lp = v.layoutParams\n                    val parent = v.parent\n                    val idName = try {\n                        if (v.id != View.NO_ID) v.resources.getResourceName(v.id) else "NO_ID"\n                    } catch (_: Throwable) {\n                        "id=${v.id}"\n                    }\n                    return "class=${v.javaClass.name},id=$idName," +\n                        "measured=${v.measuredWidth}x${v.measuredHeight},size=${v.width}x${v.height}," +\n                        "pos=${v.left},${v.top}-${v.right},${v.bottom}," +\n                        "lp=${lp?.width}x${lp?.height},padding=${v.paddingLeft},${v.paddingTop},${v.paddingRight},${v.paddingBottom}," +\n                        "y=${v.y},translationY=${v.translationY},parent=${parent?.javaClass?.name}"\n                }\n                var v: View? = clockTextView\n                var depth = 0\n                while (v != null && depth < 8) {\n                    XposedBridge.log("[OneUIX-VIEWDIAG] depth=$depth ${describeView(v)}")\n                    v = v.parent as? View\n                    depth++\n                }\n            } catch (t: Throwable) {\n                XposedBridge.log("[OneUIX-VIEWDIAG] failed: $t")\n            }\n        }'''
+          if s.count(old) != 1:
+              raise SystemExit(f'Expected exactly one insertion point, found {s.count(old)}')
+          p.write_text(s.replace(old, new, 1))
+          PY
+          git diff --check
+
+      - name: Build Debug APK
+        run: ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Get Short SHA
+        id: sha
+        run: echo "short_sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Copy APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk "OneUIX-Debug-viewhierarchy-Run${{ github.run_number }}-${{ steps.sha.outputs.short_sha }}.apk"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: OneUIX-Debug-viewhierarchy-Run${{ github.run_number }}-${{ steps.sha.outputs.short_sha }}
+          path: OneUIX-Debug-viewhierarchy-Run${{ github.run_number }}-${{ steps.sha.outputs.short_sha }}.apk
+          retention-days: 90
