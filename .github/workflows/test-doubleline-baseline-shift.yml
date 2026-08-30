@@ -1,0 +1,57 @@
+name: Test DoubleLine Baseline Shift
+
+on:
+  push:
+    branches:
+      - fix/doubleline-linebox-height
+    paths:
+      - '.github/workflows/test-doubleline-baseline-shift.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout experiment branch
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: '25'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Apply single-variable optical baseline shift experiment
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt')
+          s = p.read_text()
+          old = 'return DoubleLineClockStyle(timeScale, dateScale, 0.66f, -0.85f)'
+          new = 'return DoubleLineClockStyle(timeScale, dateScale, 0.66f, -1.50f)'
+          if s.count(old) != 1:
+              raise SystemExit(f'Expected exactly one Fold7 style target, found {s.count(old)}')
+          p.write_text(s.replace(old, new, 1))
+          PY
+          git diff --check
+          git diff -- app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Get Short SHA
+        run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      - name: Rename APK
+        run: mv app/build/outputs/apk/debug/app-debug.apk "app/build/outputs/apk/debug/OneUIX-Debug-baseline-shift-${{ github.ref_name }}-Run${{ github.run_number }}-${{ env.SHORT_SHA }}.apk"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v7
+        with:
+          path: app/build/outputs/apk/debug/*.apk
+          retention-days: 15
+          archive: false
