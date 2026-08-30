@@ -1,0 +1,56 @@
+name: Diagnose DoubleLine Line Space
+
+on:
+  push:
+    branches:
+      - fix/doubleline-linebox-height
+    paths:
+      - '.github/workflows/diagnose-doubleline-linespace.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout experiment branch
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Inject line-space diagnostics
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt')
+          s = p.read_text()
+          old = '''        clockTextView.requestLayout()\n        clockTextView.invalidate()'''
+          new = '''        clockTextView.requestLayout()\n        clockTextView.invalidate()\n        clockTextView.post {\n            try {\n                val layout = clockTextView.layout\n                if (layout == null) {\n                    XposedBridge.log("[OneUIX-LINEDIAG] layout=null")\n                    return@post\n                }\n                val lineCount = layout.lineCount\n                val measured = "${clockTextView.measuredWidth}x${clockTextView.measuredHeight}"\n                XposedBridge.log(\n                    "[OneUIX-LINEDIAG] measured=$measured layoutHeight=${layout.height} " +\n                        "lineCount=$lineCount includeFontPadding=${clockTextView.includeFontPadding} " +\n                        "gravity=${clockTextView.gravity} paddingTop=${clockTextView.paddingTop} paddingBottom=${clockTextView.paddingBottom}"\n                )\n                for (i in 0 until minOf(lineCount, 2)) {\n                    val top = layout.getLineTop(i)\n                    val bottom = layout.getLineBottom(i)\n                    val baseline = layout.getLineBaseline(i)\n                    val descent = layout.getLineDescent(i)\n                    val ascent = layout.getLineAscent(i)\n                    val start = layout.getLineStart(i)\n                    val end = layout.getLineEnd(i)\n                    XposedBridge.log(\n                        "[OneUIX-LINEDIAG] line=$i top=$top bottom=$bottom height=${bottom - top} " +\n                            "baseline=$baseline ascent=$ascent descent=$descent start=$start end=$end"\n                    )\n                }\n            } catch (t: Throwable) {\n                XposedBridge.log("[OneUIX-LINEDIAG] failed: $t")\n            }\n        }'''
+          if s.count(old) != 1:
+              raise SystemExit(f'Expected exactly one insertion point, found {s.count(old)}')
+          p.write_text(s.replace(old, new, 1))
+          PY
+          git diff --check
+
+      - name: Build Debug APK
+        run: ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Get Short SHA
+        id: sha
+        run: echo "short_sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Copy APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk "OneUIX-Debug-linespace-Run${{ github.run_number }}-${{ steps.sha.outputs.short_sha }}.apk"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: OneUIX-Debug-linespace-Run${{ github.run_number }}-${{ steps.sha.outputs.short_sha }}
+          path: OneUIX-Debug-linespace-Run${{ github.run_number }}-${{ steps.sha.outputs.short_sha }}.apk
+          retention-days: 90
