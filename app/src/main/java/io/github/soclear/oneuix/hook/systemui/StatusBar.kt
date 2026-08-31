@@ -157,6 +157,13 @@ object StatusBar {
     }
 
     private fun applyStatusBarVerticalOffset(statusBarView: View) {
+        // Fold7 A/B: enlarge the actual status_bar_contents viewport to 74px.
+        if (Build.MODEL.startsWith("SM-F966", ignoreCase = true)) {
+            statusBarView.findStatusBarArea("status_bar_contents")?.let { contents ->
+                contents.layoutParams = contents.layoutParams.apply { height = 74 }
+                contents.requestLayout()
+            }
+        }
         val offset = statusBarVerticalOffset
         val density = statusBarView.resources.displayMetrics.density
         val topPx = (offset.topDp.coerceIn(0f, 8f) * density).roundToInt()
@@ -492,7 +499,7 @@ object StatusBar {
         }
 
         clockTextView.layoutParams?.let { params ->
-            params.height = ViewGroup.LayoutParams.MATCH_PARENT
+            params.height = 74
             clockTextView.layoutParams = params
         }
         (clockTextView.parent as? LinearLayout)?.gravity = Gravity.CENTER_VERTICAL
@@ -514,7 +521,7 @@ object StatusBar {
         )
         val extraLineGapPx = runtimeConfig.extraLineGapDp * density
         clockTextView.setLineSpacing(extraLineGapPx, doubleLineClockStyle.lineSpacing)
-        clockTextView.translationY = doubleLineClockStyle.opticalTranslationYDp * density
+        clockTextView.translationY = 0f
         clockTextView.text = SpannableString(dateTime).apply {
             if (firstLineEnd > 0) {
                 setSpan(
