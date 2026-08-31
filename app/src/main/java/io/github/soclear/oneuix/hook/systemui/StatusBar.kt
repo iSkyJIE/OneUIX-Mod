@@ -521,6 +521,8 @@ object StatusBar {
         )
         val extraLineGapPx = runtimeConfig.extraLineGapDp * density
         clockTextView.setLineSpacing(extraLineGapPx, doubleLineClockStyle.lineSpacing)
+        // Fold7 dynamic centering: keep the entire two-line text block centered
+        // inside the 74px status-bar viewport after span scaling is laid out.
         clockTextView.translationY = 0f
         clockTextView.text = SpannableString(dateTime).apply {
             if (firstLineEnd > 0) {
@@ -542,6 +544,13 @@ object StatusBar {
         }
         clockTextView.contentDescription = dateTime.replace('\n', ' ')
         clockTextView.requestLayout()
+        clockTextView.post {
+            val layout = clockTextView.layout ?: return@post
+            val viewportHeightPx = clockTextView.height.takeIf { it > 0 } ?: 74
+            val centeredOffsetPx = (viewportHeightPx - layout.height) / 2f
+            val opticalOffsetPx = doubleLineClockStyle.opticalTranslationYDp * density
+            clockTextView.translationY = centeredOffsetPx + opticalOffsetPx
+        }
         clockTextView.invalidate()
     }
 
