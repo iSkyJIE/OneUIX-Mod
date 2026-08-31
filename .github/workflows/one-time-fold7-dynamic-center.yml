@@ -20,6 +20,9 @@ jobs:
           from pathlib import Path
           path = Path('app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt')
           text = path.read_text()
+          if 'val centeredOffsetPx = (viewportHeightPx - layout.height) / 2f' in text:
+              print('dynamic centering already applied; nothing to patch')
+              raise SystemExit(0)
           old = '''        clockTextView.setLineSpacing(extraLineGapPx, doubleLineClockStyle.lineSpacing)\n        clockTextView.translationY = 0f\n        clockTextView.text = SpannableString(dateTime).apply {'''
           new = '''        clockTextView.setLineSpacing(extraLineGapPx, doubleLineClockStyle.lineSpacing)\n        // Fold7 dynamic centering: keep the entire two-line text block centered\n        // inside the 74px status-bar viewport after span scaling is laid out.\n        clockTextView.translationY = 0f\n        clockTextView.text = SpannableString(dateTime).apply {'''
           if old not in text:
@@ -36,5 +39,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt
+          if git diff --cached --quiet; then
+            echo 'No source change to commit.'
+            exit 0
+          fi
           git commit -m "test: apply Fold7 dynamic double-line centering"
+          git pull --rebase origin experiment/fold7-dynamic-doubleline-position-v1
           git push
