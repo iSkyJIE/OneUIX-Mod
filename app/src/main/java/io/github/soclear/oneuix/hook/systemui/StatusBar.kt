@@ -61,6 +61,7 @@ object StatusBar {
 
     private val singleLineClockLayouts = WeakHashMap<TextView, SingleLineClockLayout>()
     private val doubleLineClockViews = WeakHashMap<TextView, Unit>()
+    private val doubleLineClockLayoutListeners = WeakHashMap<TextView, View.OnLayoutChangeListener>()
 
     private data class DoubleLineClockRuntimeConfig(
         val style: DoubleLineClockStyle,
@@ -157,13 +158,6 @@ object StatusBar {
     }
 
     private fun applyStatusBarVerticalOffset(statusBarView: View) {
-        // Fold7 A/B: enlarge the actual status_bar_contents viewport to 74px.
-        if (Build.MODEL.startsWith("SM-F966", ignoreCase = true)) {
-            statusBarView.findStatusBarArea("status_bar_contents")?.let { contents ->
-                contents.layoutParams = contents.layoutParams.apply { height = 74 }
-                contents.requestLayout()
-            }
-        }
         val offset = statusBarVerticalOffset
         val density = statusBarView.resources.displayMetrics.density
         val topPx = (offset.topDp.coerceIn(0f, 8f) * density).roundToInt()
@@ -499,7 +493,7 @@ object StatusBar {
         }
 
         clockTextView.layoutParams?.let { params ->
-            params.height = 74
+            params.height = 90
             clockTextView.layoutParams = params
         }
         (clockTextView.parent as? LinearLayout)?.gravity = Gravity.CENTER_VERTICAL
@@ -521,7 +515,32 @@ object StatusBar {
         )
         val extraLineGapPx = runtimeConfig.extraLineGapDp * density
         clockTextView.setLineSpacing(extraLineGapPx, doubleLineClockStyle.lineSpacing)
-        clockTextView.translationY = 0f
+        val layoutListener = doubleLineClockLayoutListeners.getOrPut(clockTextView) {
+            View.OnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
+                if (!Build.MODEL.startsWith("SM-F966", ignoreCase = true)) return@OnLayoutChangeListener
+                val textView = view as? TextView ?: return@OnLayoutChangeListener
+                val layout = textView.layout ?: return@OnLayoutChangeListener
+                if (layout.lineCount < 2 || textView.height <= 0) return@OnLayoutChangeListener
+
+                // Center the actual two-line layout block inside the fixed 74px
+                // Fold7 clock viewport. The offset is recomputed after every
+                // layout, so changing either line's RelativeSizeSpan moves the
+                // entire two-line group rather than pushing the second line down.
+                val top = layout.getLineTop(0).toFloat()
+                val bottom = layout.getLineBottom(layout.lineCount - 1).toFloat()
+                val contentCenter = (top + bottom) / 2f
+                val viewportCenter = textView.height / 2f
+                val density = textView.resources.displayMetrics.density
+                val optical = doubleLineClockRuntimeConfig?.style?.opticalTranslationYDp ?: -0.85f
+                textView.translationY = viewportCenter - contentCenter + optical * density
+            }
+        }
+        if (doubleLineClockLayoutListeners[clockTextView] === layoutListener) {
+            // Listener already registered.
+        } else {
+            doubleLineClockLayoutListeners[clockTextView] = layoutListener
+            clockTextView.addOnLayoutChangeListener(layoutListener)
+        }
         clockTextView.text = SpannableString(dateTime).apply {
             if (firstLineEnd > 0) {
                 setSpan(
@@ -542,6 +561,18 @@ object StatusBar {
         }
         clockTextView.contentDescription = dateTime.replace('\n', ' ')
         clockTextView.requestLayout()
+        clockTextView.post {
+            val layout = clockTextView.layout
+            if (layout != null && layout.lineCount >= 2 && clockTextView.height > 0) {
+                val top = layout.getLineTop(0).toFloat()
+                val bottom = layout.getLineBottom(layout.lineCount - 1).toFloat()
+                val contentCenter = (top + bottom) / 2f
+                val viewportCenter = clockTextView.height / 2f
+                val density = clockTextView.resources.displayMetrics.density
+                val optical = doubleLineClockRuntimeConfig?.style?.opticalTranslationYDp ?: doubleLineClockStyle.opticalTranslationYDp
+                clockTextView.translationY = viewportCenter - contentCenter + optical * density
+            }
+        }
         clockTextView.invalidate()
     }
 
