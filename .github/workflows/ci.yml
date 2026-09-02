@@ -17,8 +17,28 @@ jobs:
           cache: 'gradle'
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-      - name: Run 277 baseline - Clock height 74 to 90 only
-        if: github.ref_name == 'experiment/fold7-run277-clock90-only'
+
+      # Step 1: remove only the Fold7 parent status_bar_contents height=74 override.
+      - name: Remove Fold7 status_bar_contents height override
+        if: github.ref_name == 'experiment/fold7-clock90-remove-parent-height'
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt')
+          text = path.read_text(encoding='utf-8')
+          old = '''        // Fold7 A/B: enlarge the actual status_bar_contents viewport to 74px.\n        if (Build.MODEL.startsWith("SM-F966", ignoreCase = true)) {\n            statusBarView.findStatusBarArea("status_bar_contents")?.let { contents ->\n                contents.layoutParams = contents.layoutParams.apply { height = 74 }\n                contents.requestLayout()\n            }\n        }\n'''
+          if old not in text:
+              raise SystemExit('Expected Fold7 status_bar_contents height override not found; refusing to build')
+          text = text.replace(old, '', 1)
+          if 'status_bar_contents")?.let { contents ->' in text and 'height = 74' in text:
+              raise SystemExit('Fold7 status_bar_contents height override still present')
+          path.write_text(text, encoding='utf-8')
+          print('OK: Fold7 parent status_bar_contents height=74 override removed')
+          PY
+
+      # Preserve Run 326's already-tested Clock 90px change; no other Clock changes here.
+      - name: Preserve Fold7 Clock height 90
+        if: github.ref_name == 'experiment/fold7-clock90-remove-parent-height'
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -29,8 +49,9 @@ jobs:
               raise SystemExit(f'Expected exactly one Clock params.height = 74, found {text.count(old)}')
           text = text.replace(old, '            params.height = 90\n', 1)
           path.write_text(text, encoding='utf-8')
-          print('OK: Run 277 baseline, only double-line Clock params.height changed 74 -> 90')
+          print('OK: Fold7 double-line Clock remains at 90px')
           PY
+
       - name: Get Short SHA
         run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
       - name: Build Debug APK
