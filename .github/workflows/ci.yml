@@ -1,6 +1,5 @@
 name: CI
 
-# 触发条件：所有分支的 push 和 PR 都会触发
 on:
   push:
   pull_request:
@@ -8,53 +7,38 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v6
-
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
           distribution: 'zulu'
           java-version: '25'
           cache: 'gradle'
-
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-
-      # Experimental Fold7 test: remove only the status_bar_contents height=74 override.
-      - name: Remove Fold7 status_bar_contents height override
-        if: github.ref_name == 'exp/remove-fold7-statusbar-contents-height'
+      - name: Run 277 baseline - Clock height 74 to 90 only
+        if: github.ref_name == 'experiment/fold7-run277-clock90-only'
         run: |
           python3 - <<'PY'
           from pathlib import Path
           path = Path('app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt')
           text = path.read_text(encoding='utf-8')
-          old = '''        // Fold7 A/B: enlarge the actual status_bar_contents viewport to 74px.\n        if (Build.MODEL.startsWith("SM-F966", ignoreCase = true)) {\n            statusBarView.findStatusBarArea("status_bar_contents")?.let { contents ->\n                contents.layoutParams = contents.layoutParams.apply { height = 74 }\n                contents.requestLayout()\n            }\n        }\n'''
-          if old not in text:
-              raise SystemExit('Expected Fold7 status_bar_contents height override not found; refusing to build')
-          text = text.replace(old, '', 1)
-          if 'status_bar_contents")?.let { contents ->' in text and 'height = 74' in text:
-              raise SystemExit('Fold7 status_bar_contents height override still present')
+          old = '            params.height = 74\n'
+          if text.count(old) != 1:
+              raise SystemExit(f'Expected exactly one Clock params.height = 74, found {text.count(old)}')
+          text = text.replace(old, '            params.height = 90\n', 1)
           path.write_text(text, encoding='utf-8')
-          print('Verified: only Fold7 status_bar_contents height=74 override removed for this build')
+          print('OK: Run 277 baseline, only double-line Clock params.height changed 74 -> 90')
           PY
-
-      # 获取当前 commit 的前 7 位短 Hash，并存入环境变量 SHORT_SHA 中
       - name: Get Short SHA
         run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
-
-      # 构建 Debug 包
       - name: Build Debug APK
         run: ./gradlew assembleDebug
-
-      # 重命名 Debug 包
       - name: Rename APK
         run: |
           SAFE_BRANCH_NAME=$(echo "${{ github.ref_name }}" | tr '/' '-')
           mv app/build/outputs/apk/debug/app-debug.apk "app/build/outputs/apk/debug/OneUIX-Debug-${SAFE_BRANCH_NAME}-Run${{ github.run_number }}-${{ env.SHORT_SHA }}.apk"
-
-      # 上传产物
       - name: Upload APK
         uses: actions/upload-artifact@v7
         with:
