@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -18,39 +21,42 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # Step 1: remove only the Fold7 parent status_bar_contents height=74 override.
-      - name: Remove Fold7 status_bar_contents height override
-        if: github.ref_name == 'experiment/fold7-clock90-remove-parent-height'
+      # One-time cleanup: materialize the exact source changes proven by Run 328.
+      - name: Materialize verified Fold7 source changes
+        if: github.ref_name == 'clean/fold7-run328-source'
         run: |
           python3 - <<'PY'
           from pathlib import Path
           path = Path('app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt')
           text = path.read_text(encoding='utf-8')
-          old = '''        // Fold7 A/B: enlarge the actual status_bar_contents viewport to 74px.\n        if (Build.MODEL.startsWith("SM-F966", ignoreCase = true)) {\n            statusBarView.findStatusBarArea("status_bar_contents")?.let { contents ->\n                contents.layoutParams = contents.layoutParams.apply { height = 74 }\n                contents.requestLayout()\n            }\n        }\n'''
-          if old not in text:
-              raise SystemExit('Expected Fold7 status_bar_contents height override not found; refusing to build')
-          text = text.replace(old, '', 1)
-          if 'status_bar_contents")?.let { contents ->' in text and 'height = 74' in text:
-              raise SystemExit('Fold7 status_bar_contents height override still present')
+          parent = '''        // Fold7 A/B: enlarge the actual status_bar_contents viewport to 74px.\n        if (Build.MODEL.startsWith("SM-F966", ignoreCase = true)) {\n            statusBarView.findStatusBarArea("status_bar_contents")?.let { contents ->\n                contents.layoutParams = contents.layoutParams.apply { height = 74 }\n                contents.requestLayout()\n            }\n        }\n'''
+          if parent in text:
+              text = text.replace(parent, '', 1)
+          elif 'status_bar_contents")?.let { contents ->' in text and 'height = 74' in text:
+              raise SystemExit('Unexpected Fold7 status_bar_contents height override shape; refusing to edit')
+          clock = '            params.height = 74\n'
+          if clock in text:
+              if text.count(clock) != 1:
+                  raise SystemExit(f'Expected exactly one Clock params.height = 74, found {text.count(clock)}')
+              text = text.replace(clock, '            params.height = 90\n', 1)
+          elif '            params.height = 90\n' not in text:
+              raise SystemExit('Fold7 Clock height target not found; refusing to edit')
           path.write_text(text, encoding='utf-8')
-          print('OK: Fold7 parent status_bar_contents height=74 override removed')
+          print('OK: materialized Run 328 source changes')
           PY
 
-      # Preserve Run 326's already-tested Clock 90px change; no other Clock changes here.
-      - name: Preserve Fold7 Clock height 90
-        if: github.ref_name == 'experiment/fold7-clock90-remove-parent-height'
+      - name: Commit materialized source
+        if: github.ref_name == 'clean/fold7-run328-source'
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path('app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt')
-          text = path.read_text(encoding='utf-8')
-          old = '            params.height = 74\n'
-          if text.count(old) != 1:
-              raise SystemExit(f'Expected exactly one Clock params.height = 74, found {text.count(old)}')
-          text = text.replace(old, '            params.height = 90\n', 1)
-          path.write_text(text, encoding='utf-8')
-          print('OK: Fold7 double-line Clock remains at 90px')
-          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet; then
+            echo "Source already clean; no commit needed"
+          else
+            git add app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt
+            git commit -m "fix: materialize verified Fold7 Run 328 source"
+            git push origin HEAD:${GITHUB_REF_NAME}
+          fi
 
       - name: Get Short SHA
         run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
