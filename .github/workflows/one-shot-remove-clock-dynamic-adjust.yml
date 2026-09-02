@@ -1,0 +1,58 @@
+name: One-shot remove Fold7 Clock dynamic vertical adjustment
+
+on:
+  push:
+    branches:
+      - experiment/fold7-remove-clock-dynamic-vertical-adjust
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor == 'github-actions[bot]' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Remove only dynamic Clock vertical adjustment
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt')
+          text = path.read_text(encoding='utf-8')
+
+          old_decl = '    private val doubleLineClockLayoutListeners = WeakHashMap<TextView, View.OnLayoutChangeListener>()\n'
+          if old_decl not in text:
+              raise SystemExit('Expected doubleLineClockLayoutListeners declaration not found; refusing to modify')
+          text = text.replace(old_decl, '', 1)
+
+          old_listener = '''        val layoutListener = doubleLineClockLayoutListeners.getOrPut(clockTextView) {\n            View.OnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->\n                if (!Build.MODEL.startsWith("SM-F966", ignoreCase = true)) return@OnLayoutChangeListener\n                val textView = view as? TextView ?: return@OnLayoutChangeListener\n                val layout = textView.layout ?: return@OnLayoutChangeListener\n                if (layout.lineCount < 2 || textView.height <= 0) return@OnLayoutChangeListener\n\n                // Center the actual two-line layout block inside the fixed 74px\n                // Fold7 clock viewport. The offset is recomputed after every\n                // layout, so changing either line's RelativeSizeSpan moves the\n                // entire two-line group rather than pushing the second line down.\n                val top = layout.getLineTop(0).toFloat()\n                val bottom = layout.getLineBottom(layout.lineCount - 1).toFloat()\n                val contentCenter = (top + bottom) / 2f\n                val viewportCenter = textView.height / 2f\n                val density = textView.resources.displayMetrics.density\n                val optical = doubleLineClockRuntimeConfig?.style?.opticalTranslationYDp ?: -0.85f\n                textView.translationY = viewportCenter - contentCenter + optical * density\n            }\n        }\n        if (doubleLineClockLayoutListeners[clockTextView] === layoutListener) {\n            // Listener already registered.\n        } else {\n            doubleLineClockLayoutListeners[clockTextView] = layoutListener\n            clockTextView.addOnLayoutChangeListener(layoutListener)\n        }\n'''
+          if text.count(old_listener) != 1:
+              raise SystemExit(f'Expected exactly one dynamic Clock layout listener block, found {text.count(old_listener)}; refusing to modify')
+          text = text.replace(old_listener, '', 1)
+
+          old_post = '''        clockTextView.requestLayout()\n        clockTextView.post {\n            val layout = clockTextView.layout\n            if (layout != null && layout.lineCount >= 2 && clockTextView.height > 0) {\n                val top = layout.getLineTop(0).toFloat()\n                val bottom = layout.getLineBottom(layout.lineCount - 1).toFloat()\n                val contentCenter = (top + bottom) / 2f\n                val viewportCenter = clockTextView.height / 2f\n                val density = clockTextView.resources.displayMetrics.density\n                val optical = doubleLineClockRuntimeConfig?.style?.opticalTranslationYDp ?: doubleLineClockStyle.opticalTranslationYDp\n                clockTextView.translationY = viewportCenter - contentCenter + optical * density\n            }\n        }\n        clockTextView.invalidate()\n'''
+          if text.count(old_post) != 1:
+              raise SystemExit(f'Expected exactly one post-layout dynamic Clock adjustment block, found {text.count(old_post)}; refusing to modify')
+          text = text.replace(old_post, '''        clockTextView.requestLayout()\n        clockTextView.invalidate()\n''', 1)
+
+          if 'doubleLineClockLayoutListeners' in text:
+              raise SystemExit('Dynamic Clock layout listener reference still present')
+          if 'textView.translationY = viewportCenter - contentCenter' in text:
+              raise SystemExit('Dynamic Clock vertical adjustment still present')
+          path.write_text(text, encoding='utf-8')
+          print('Verified: removed only Fold7 double-line Clock dynamic vertical adjustment')
+          PY
+
+      - name: Commit source change and remove one-shot workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt .github/workflows/one-shot-remove-clock-dynamic-adjust.yml
+          git commit -m 'fix: remove dynamic Fold7 Clock vertical adjustment'
+          git rm .github/workflows/one-shot-remove-clock-dynamic-adjust.yml
+          git commit --amend --no-edit
+          git push
