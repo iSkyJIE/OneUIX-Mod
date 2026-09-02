@@ -22,6 +22,24 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      # Experimental Fold7 test: remove only the status_bar_contents height=74 override.
+      - name: Remove Fold7 status_bar_contents height override
+        if: github.ref_name == 'exp/remove-fold7-statusbar-contents-height'
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt')
+          text = path.read_text(encoding='utf-8')
+          old = '''        // Fold7 A/B: enlarge the actual status_bar_contents viewport to 74px.\n        if (Build.MODEL.startsWith("SM-F966", ignoreCase = true)) {\n            statusBarView.findStatusBarArea("status_bar_contents")?.let { contents ->\n                contents.layoutParams = contents.layoutParams.apply { height = 74 }\n                contents.requestLayout()\n            }\n        }\n'''
+          if old not in text:
+              raise SystemExit('Expected Fold7 status_bar_contents height override not found; refusing to build')
+          text = text.replace(old, '', 1)
+          if 'status_bar_contents")?.let { contents ->' in text and 'height = 74' in text:
+              raise SystemExit('Fold7 status_bar_contents height override still present')
+          path.write_text(text, encoding='utf-8')
+          print('Verified: only Fold7 status_bar_contents height=74 override removed for this build')
+          PY
+
       # 获取当前 commit 的前 7 位短 Hash，并存入环境变量 SHORT_SHA 中
       - name: Get Short SHA
         run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
