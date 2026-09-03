@@ -1,0 +1,115 @@
+name: OneUIX Mod Branding Migration
+
+on:
+  push:
+    branches:
+      - cleanup/oneuix-mod-branding-final
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Apply branding and release layout
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test "$(git branch --show-current)" = "cleanup/oneuix-mod-branding-final"
+
+          # App identity/version. Keep the existing source namespace unchanged.
+          sed -i 's/applicationId = "io.github.isky.oneuix"/applicationId = "io.github.mod.oneuix"/' app/build.gradle.kts
+          sed -i 's/versionCode = 27/versionCode = 1/' app/build.gradle.kts
+          sed -i 's/versionName = "1.0.0-iSky"/versionName = "1.0.0"/' app/build.gradle.kts
+          sed -i 's/<string name="app_name">OneUIX iSky<\/string>/<string name="app_name">OneUIX Mod<\/string>/' app/src/main/res/values/strings.xml
+
+          # Remove the old Anndy999 auto-release workflow and obsolete patch builder.
+          rm -f .github/workflows/anndy999-release.yml
+          rm -f anndy999-doubleline-build.yml
+
+          # Release workflow follows the original OneUIX release model:
+          # create a GitHub Release first, then build/upload a release APK named from the tag.
+          cat > .github/workflows/release.yml <<'EOF'
+          name: Release
+
+          on:
+            release:
+              types: [created]
+
+          jobs:
+            build:
+              permissions:
+                contents: write
+
+              runs-on: ubuntu-latest
+              steps:
+                - uses: actions/checkout@v6
+
+                - name: Set up JDK
+                  uses: actions/setup-java@v5
+                  with:
+                    distribution: 'zulu'
+                    java-version: '25'
+                    cache: 'gradle'
+
+                - name: Decode Keystore
+                  run: |
+                    echo ${{ secrets.KEYSTORE_BASE64 }} | base64 -d > app/release.keystore
+
+                - name: Set up keystore properties
+                  env:
+                    KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+                    KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+                    KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+                  run: |
+                    echo "storeFile=release.keystore" > keystore.properties
+                    echo "storePassword=$KEYSTORE_PASSWORD" >> keystore.properties
+                    echo "keyAlias=$KEY_ALIAS" >> keystore.properties
+                    echo "keyPassword=$KEY_PASSWORD" >> keystore.properties
+
+                - name: Grant execute permission for gradlew
+                  run: chmod +x gradlew
+
+                - name: Build Release APK
+                  run: ./gradlew assembleRelease
+
+                - name: Rename APK
+                  run: |
+                    mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/OneUIX-Mod_${{ github.ref_name }}.apk
+
+                - name: Upload Release Assets
+                  uses: softprops/action-gh-release@v2
+                  with:
+                    files: |
+                      app/build/outputs/apk/release/OneUIX-Mod_*.apk
+                  env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EOF
+
+          git diff --check
+          if grep -Rni --exclude='oneuix-branding-migration.yml' 'anndy999' .github app/src/main/res/values app/build.gradle.kts anndy999-doubleline-build.yml 2>/dev/null; then
+            echo 'Unexpected Anndy999 branding remains'
+            exit 1
+          fi
+
+      - name: Commit migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'No migration changes needed.'
+            exit 0
+          fi
+          git commit -m 'chore: establish OneUIX Mod branding and release v1.0.0'
+          git push origin HEAD:cleanup/oneuix-mod-branding-final
