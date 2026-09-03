@@ -492,7 +492,7 @@ object StatusBar {
         }
 
         clockTextView.layoutParams?.let { params ->
-            params.height = 90
+            params.height = 94
             clockTextView.layoutParams = params
         }
         (clockTextView.parent as? LinearLayout)?.gravity = Gravity.CENTER_VERTICAL
