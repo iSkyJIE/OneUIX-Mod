@@ -14,11 +14,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "io.github.isky.oneuix"
+        applicationId = "io.github.mod.oneuix"
         minSdk = 33
         targetSdk = 37
-        versionCode = 27
-        versionName = "1.0.0-iSky"
+        versionCode = 1
+        versionName = "1.0.0"
 
         ndk {
             // ABI过滤，只加载 arm 架构 64 位动态链接库
