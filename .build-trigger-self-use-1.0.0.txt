@@ -1,1 +1,0 @@
-Self-use debug build trigger only. No release or tag.
