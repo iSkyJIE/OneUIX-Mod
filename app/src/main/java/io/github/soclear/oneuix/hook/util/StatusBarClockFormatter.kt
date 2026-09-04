@@ -14,7 +14,7 @@ import java.time.format.DateTimeFormatter
  * CNTIME    - traditional Chinese double-hour (十二时辰)
  * CNYEAR    - traditional Chinese lunar year
  * CNZODIAC  - Chinese zodiac animal
- * CNSEASON  - traditional Chinese season, based on 立春/立夏/立秋/立冬
+ * CNSEASON  - season based on simple Gregorian date ranges
  */
 object StatusBarClockFormatter {
     private const val LUNAR_TOKEN = "CNLUNAR"
@@ -66,16 +66,11 @@ object StatusBarClockFormatter {
         return "${branch}时"
     }
 
-    /** Traditional seasons are bounded by 立春、立夏、立秋、立冬. */
+    /** Simple Gregorian season ranges: Mar-May spring, Jun-Aug summer, Sep-Nov autumn, Dec-Feb winter. */
     private fun seasonText(date: java.time.LocalDate): String = when (date.monthValue) {
-        3, 4 -> "春"
-        6, 7 -> "夏"
-        9, 10 -> "秋"
-        1, 12 -> "冬"
-        2 -> if (date.dayOfMonth >= 4) "春" else "冬"
-        5 -> if (date.dayOfMonth >= 6) "夏" else "春"
-        8 -> if (date.dayOfMonth >= 8) "秋" else "夏"
-        11 -> if (date.dayOfMonth >= 8) "冬" else "秋"
+        3, 4, 5 -> "春"
+        6, 7, 8 -> "夏"
+        9, 10, 11 -> "秋"
         else -> "冬"
     }
 
