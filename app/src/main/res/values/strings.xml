@@ -45,11 +45,10 @@
     <string name="statusBarDoubleLineClockSize_extraLarge">Extra large</string>
     <string name="statusBarDoubleLineClockGap_title">Double-line clock line gap</string>
     <string name="statusBarDoubleLineClockGap_summary">Current gap: %1$.1f dp; applies immediately.</string>
-    <string name="fold7CustomDoubleLineClockScale_title">Use Fold7 custom double-line sizes</string>
-    <string name="fold7CustomDoubleLineClockScale_summary">Default: time 1.00×, date 0.80×. Fold7 only; changes apply immediately.</string>
-    <string name="fold7DoubleLineClockTimeScale_title">Fold7 time scale</string>
+    <string name="fold7CustomDoubleLineClockScale_title">Use custom double-line text size</string>
+    <string name="fold7DoubleLineClockTimeScale_title">Upper text scale</string>
     <string name="fold7DoubleLineClockTimeScale_summary">Current time scale: %1$.2f×</string>
-    <string name="fold7DoubleLineClockDateScale_title">Fold7 date scale</string>
+    <string name="fold7DoubleLineClockDateScale_title">Lower text scale</string>
     <string name="fold7DoubleLineClockDateScale_summary">Current date scale: %1$.2f×</string>
     <string name="setStatusBarClockTextScale_title">Set status bar clock scale factor</string>
     <string name="restartSystemUI_success">System UI restart requested</string>
