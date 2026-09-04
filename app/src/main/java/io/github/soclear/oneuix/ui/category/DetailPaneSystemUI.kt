@@ -423,9 +423,6 @@ fun DetailPaneSystemUI(
                         title = stringResource(
                             id = R.string.fold7CustomDoubleLineClockScale_title
                         ),
-                        summary = stringResource(
-                            id = R.string.fold7CustomDoubleLineClockScale_summary
-                        ),
                         checked = uiState.statusBar.useFold7CustomDoubleLineClockScale,
                         onCheckedChange = {
                             onEvent(
@@ -1429,377 +1426,115 @@ private fun SettingViewModel.onStatusBarEvent(event: SystemUIEvent.StatusBar) {
     updateData { preference ->
         when (event) {
             is SystemUIEvent.StatusBar.ModifyStatusBarLeftPadding -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            modifyStatusBarLeftPadding = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(modifyStatusBarLeftPadding = event.value)))
             }
-
             is SystemUIEvent.StatusBar.StatusBarLeftPaddingDp -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            statusBarLeftPaddingDp = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(statusBarLeftPaddingDp = event.value)))
             }
-
             is SystemUIEvent.StatusBar.ModifyStatusBarRightPadding -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            modifyStatusBarRightPadding = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(modifyStatusBarRightPadding = event.value)))
             }
-
             is SystemUIEvent.StatusBar.StatusBarRightPaddingDp -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            statusBarRightPaddingDp = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(statusBarRightPaddingDp = event.value)))
             }
-
             is SystemUIEvent.StatusBar.StatusBarTopPaddingDp -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            statusBarTopPaddingDp = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(statusBarTopPaddingDp = event.value)))
             }
-
             is SystemUIEvent.StatusBar.StatusBarBottomPaddingDp -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            statusBarBottomPaddingDp = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(statusBarBottomPaddingDp = event.value)))
             }
-
             is SystemUIEvent.StatusBar.SetBatteryIconWidthScale -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            setBatteryIconWidthScale = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(setBatteryIconWidthScale = event.value)))
             }
-
             is SystemUIEvent.StatusBar.BatteryIconWidthScale -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            batteryIconWidthScale = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(batteryIconWidthScale = event.value)))
             }
-
             is SystemUIEvent.StatusBar.HideLockscreenStatusBar -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            hideLockscreenStatusBar = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(hideLockscreenStatusBar = event.value)))
             }
-
             is SystemUIEvent.StatusBar.SetBatteryIconHeightScale -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            setBatteryIconHeightScale = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(setBatteryIconHeightScale = event.value)))
             }
-
             is SystemUIEvent.StatusBar.BatteryIconHeightScale -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            batteryIconHeightScale = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(batteryIconHeightScale = event.value)))
             }
-
             is SystemUIEvent.StatusBar.HideBatteryPercentageSign -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            hideBatteryPercentageSign = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(hideBatteryPercentageSign = event.value)))
             }
-
             is SystemUIEvent.StatusBar.HideBatteryIcon -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            hideBatteryIcon = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(hideBatteryIcon = event.value)))
             }
-
             is SystemUIEvent.StatusBar.AddBatteryLevelText -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            addBatteryLevelText = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(addBatteryLevelText = event.value)))
             }
-
             is SystemUIEvent.StatusBar.HideBatteryLevelTextPercentageSign -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            hideBatteryLevelTextPercentageSign = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(hideBatteryLevelTextPercentageSign = event.value)))
             }
-
             is SystemUIEvent.StatusBar.HideBatteryLevelTextChargingIcon -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            hideBatteryLevelTextChargingIcon = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(hideBatteryLevelTextChargingIcon = event.value)))
             }
-
             is SystemUIEvent.StatusBar.SupportRealTimeNetworkSpeed -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            supportRealTimeNetworkSpeed = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(supportRealTimeNetworkSpeed = event.value)))
             }
-
-
             is SystemUIEvent.StatusBar.ShowSeparateUpDownNetworkSpeeds -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            showSeparateUpDownNetworkSpeeds = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(showSeparateUpDownNetworkSpeeds = event.value)))
             }
-
             is SystemUIEvent.StatusBar.SetStatusBarClockFormat -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            setStatusBarClockFormat = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(setStatusBarClockFormat = event.value)))
             }
-
             is SystemUIEvent.StatusBar.StatusBarClockFormat -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            statusBarClockFormat = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(statusBarClockFormat = event.value)))
             }
-
             is SystemUIEvent.StatusBar.StatusBarDoubleLineClockSize -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            statusBarDoubleLineClockSize = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(statusBarDoubleLineClockSize = event.value)))
             }
-
             is SystemUIEvent.StatusBar.DoubleLineClockGapDp -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            doubleLineClockGapDp = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(doubleLineClockGapDp = event.value)))
             }
-
             is SystemUIEvent.StatusBar.SetFold7CustomDoubleLineClockScale -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            useFold7CustomDoubleLineClockScale = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(useFold7CustomDoubleLineClockScale = event.value)))
             }
-
             is SystemUIEvent.StatusBar.Fold7DoubleLineClockTimeScale -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            fold7DoubleLineClockTimeScale = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(fold7DoubleLineClockTimeScale = event.value)))
             }
-
             is SystemUIEvent.StatusBar.Fold7DoubleLineClockDateScale -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            fold7DoubleLineClockDateScale = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(fold7DoubleLineClockDateScale = event.value)))
             }
-
             is SystemUIEvent.StatusBar.SetStatusBarClockTextScale -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            setStatusBarClockTextScale = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(setStatusBarClockTextScale = event.value)))
             }
-
             is SystemUIEvent.StatusBar.StatusBarClockTextScale -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            statusBarClockTextScale = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(statusBarClockTextScale = event.value)))
             }
-
             is SystemUIEvent.StatusBar.UpdateStatusBarClockEverySecond -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            updateStatusBarClockEverySecond = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(updateStatusBarClockEverySecond = event.value)))
             }
-
             is SystemUIEvent.StatusBar.HideSecureFolderStatusBarIcon -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            hideSecureFolderStatusBarIcon = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(hideSecureFolderStatusBarIcon = event.value)))
             }
-
             is SystemUIEvent.StatusBar.RestoreBluetoothStatusBarIcon -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            restoreBluetoothStatusBarIcon = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(restoreBluetoothStatusBarIcon = event.value)))
             }
-
             is SystemUIEvent.StatusBar.PhysicalEsimAdapterWorkaround -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            physicalEsimAdapterWorkaround = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(physicalEsimAdapterWorkaround = event.value)))
             }
-
             is SystemUIEvent.StatusBar.PhysicalEsimAdapterSimSlot -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            physicalEsimAdapterSimSlot = event.value.coerceIn(
-                                0,
-                                ESIM_ADAPTER_SIM_BOTH
-                            )
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(physicalEsimAdapterSimSlot = event.value.coerceIn(0, ESIM_ADAPTER_SIM_BOTH))))
             }
-
             is SystemUIEvent.StatusBar.DoubleTapStatusBarToSleep -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            doubleTapStatusBarToSleep = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(doubleTapStatusBarToSleep = event.value)))
             }
-
             is SystemUIEvent.StatusBar.ModifyStatusBarMaxNotificationIcons -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            modifyStatusBarMaxNotificationIcons = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(modifyStatusBarMaxNotificationIcons = event.value)))
             }
-
             is SystemUIEvent.StatusBar.StatusBarMaxNotificationIcons -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            statusBarMaxNotificationIcons = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(statusBarMaxNotificationIcons = event.value)))
             }
-
             is SystemUIEvent.StatusBar.SetCustomCarrierName -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            setCustomCarrierName = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(setCustomCarrierName = event.value)))
             }
-
             is SystemUIEvent.StatusBar.CustomCarrierName -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        statusBar = preference.systemUI.statusBar.copy(
-                            customCarrierName = event.value
-                        )
-                    )
-                )
+                preference.copy(systemUI = preference.systemUI.copy(statusBar = preference.systemUI.statusBar.copy(customCarrierName = event.value)))
             }
         }
     }
@@ -1808,165 +1543,22 @@ private fun SettingViewModel.onStatusBarEvent(event: SystemUIEvent.StatusBar) {
 private fun SettingViewModel.onQSEvent(event: SystemUIEvent.QS) {
     updateData { preference ->
         when (event) {
-            is SystemUIEvent.QS.SetQsClockMonospaced -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        qs = preference.systemUI.qs.copy(
-                            setQsClockMonospaced = event.value
-                        )
-                    )
-                )
-            }
-
-            is SystemUIEvent.QS.HideDeviceControlQsTile -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        qs = preference.systemUI.qs.copy(
-                            hideDeviceControlQsTile = event.value
-                        )
-                    )
-                )
-            }
-
-            is SystemUIEvent.QS.HideSmartViewQsTile -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        qs = preference.systemUI.qs.copy(
-                            hideSmartViewQsTile = event.value
-                        )
-                    )
-                )
-            }
-
-            is SystemUIEvent.QS.TurnOn5gQsTile -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        qs = preference.systemUI.qs.copy(
-                            turnOn5gQsTile = event.value
-                        )
-                    )
-                )
-            }
-
-            is SystemUIEvent.QS.HideQsBarMediaPlayer -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        qs = preference.systemUI.qs.copy(
-                            hideQsBarMediaPlayer = event.value
-                        )
-                    )
-                )
-            }
-
-            is SystemUIEvent.QS.HideQsBarNearbyDevicesAndDeviceControl -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        qs = preference.systemUI.qs.copy(
-                            hideQsBarNearbyDevicesAndDeviceControl = event.value
-                        )
-                    )
-                )
-            }
-
-            is SystemUIEvent.QS.HideQsBarSecurityFooter -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        qs = preference.systemUI.qs.copy(
-                            hideQsBarSecurityFooter = event.value
-                        )
-                    )
-                )
-            }
-
-            is SystemUIEvent.QS.HideQsBarDataUsage -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        qs = preference.systemUI.qs.copy(
-                            hideQsBarDataUsage = event.value
-                        )
-                    )
-                )
-            }
-
-            is SystemUIEvent.QS.HideQsBarSmartViewAndModes -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        qs = preference.systemUI.qs.copy(
-                            hideQsBarSmartViewAndModes = event.value
-                        )
-                    )
-                )
-            }
-
-            is SystemUIEvent.QS.AlwaysExpandQsTileChunk -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        qs = preference.systemUI.qs.copy(
-                            alwaysExpandQsTileChunk = event.value
-                        )
-                    )
-                )
-            }
-
-            is SystemUIEvent.QS.AlwaysShowTimeDateOnQs -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        qs = preference.systemUI.qs.copy(
-                            alwaysShowTimeDateOnQs = event.value
-                        )
-                    )
-                )
-            }
-
-            is SystemUIEvent.QS.AddBrightnessProgressToQsBar -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        qs = preference.systemUI.qs.copy(
-                            addBrightnessProgressToQsBar = event.value
-                        )
-                    )
-                )
-            }
-
-            is SystemUIEvent.QS.AddVolumeProgressToQsBar -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        qs = preference.systemUI.qs.copy(
-                            addVolumeProgressToQsBar = event.value
-                        )
-                    )
-                )
-            }
-
-            is SystemUIEvent.QS.ShowTraditionalChineseDateOnQS -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        qs = preference.systemUI.qs.copy(
-                            showTraditionalChineseDateOnQS = event.value
-                        )
-                    )
-                )
-            }
-
-            is SystemUIEvent.QS.ModifyQSClockTextSize -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        qs = preference.systemUI.qs.copy(
-                            modifyQSClockTextSize = event.value
-                        )
-                    )
-                )
-            }
-
-            is SystemUIEvent.QS.QSClockTextSize -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        qs = preference.systemUI.qs.copy(
-                            qsClockTextSize = event.value
-                        )
-                    )
-                )
-            }
+            is SystemUIEvent.QS.SetQsClockMonospaced -> preference.copy(systemUI = preference.systemUI.copy(qs = preference.systemUI.qs.copy(setQsClockMonospaced = event.value)))
+            is SystemUIEvent.QS.HideDeviceControlQsTile -> preference.copy(systemUI = preference.systemUI.copy(qs = preference.systemUI.qs.copy(hideDeviceControlQsTile = event.value)))
+            is SystemUIEvent.QS.HideSmartViewQsTile -> preference.copy(systemUI = preference.systemUI.copy(qs = preference.systemUI.qs.copy(hideSmartViewQsTile = event.value)))
+            is SystemUIEvent.QS.TurnOn5gQsTile -> preference.copy(systemUI = preference.systemUI.copy(qs = preference.systemUI.qs.copy(turnOn5gQsTile = event.value)))
+            is SystemUIEvent.QS.HideQsBarMediaPlayer -> preference.copy(systemUI = preference.systemUI.copy(qs = preference.systemUI.qs.copy(hideQsBarMediaPlayer = event.value)))
+            is SystemUIEvent.QS.HideQsBarNearbyDevicesAndDeviceControl -> preference.copy(systemUI = preference.systemUI.copy(qs = preference.systemUI.qs.copy(hideQsBarNearbyDevicesAndDeviceControl = event.value)))
+            is SystemUIEvent.QS.HideQsBarSecurityFooter -> preference.copy(systemUI = preference.systemUI.copy(qs = preference.systemUI.qs.copy(hideQsBarSecurityFooter = event.value)))
+            is SystemUIEvent.QS.HideQsBarDataUsage -> preference.copy(systemUI = preference.systemUI.copy(qs = preference.systemUI.qs.copy(hideQsBarDataUsage = event.value)))
+            is SystemUIEvent.QS.HideQsBarSmartViewAndModes -> preference.copy(systemUI = preference.systemUI.copy(qs = preference.systemUI.qs.copy(hideQsBarSmartViewAndModes = event.value)))
+            is SystemUIEvent.QS.AlwaysExpandQsTileChunk -> preference.copy(systemUI = preference.systemUI.copy(qs = preference.systemUI.qs.copy(alwaysExpandQsTileChunk = event.value)))
+            is SystemUIEvent.QS.AlwaysShowTimeDateOnQs -> preference.copy(systemUI = preference.systemUI.copy(qs = preference.systemUI.qs.copy(alwaysShowTimeDateOnQs = event.value)))
+            is SystemUIEvent.QS.AddBrightnessProgressToQsBar -> preference.copy(systemUI = preference.systemUI.copy(qs = preference.systemUI.qs.copy(addBrightnessProgressToQsBar = event.value)))
+            is SystemUIEvent.QS.AddVolumeProgressToQsBar -> preference.copy(systemUI = preference.systemUI.copy(qs = preference.systemUI.qs.copy(addVolumeProgressToQsBar = event.value)))
+            is SystemUIEvent.QS.ShowTraditionalChineseDateOnQS -> preference.copy(systemUI = preference.systemUI.copy(qs = preference.systemUI.qs.copy(showTraditionalChineseDateOnQS = event.value)))
+            is SystemUIEvent.QS.ModifyQSClockTextSize -> preference.copy(systemUI = preference.systemUI.copy(qs = preference.systemUI.qs.copy(modifyQSClockTextSize = event.value)))
+            is SystemUIEvent.QS.QSClockTextSize -> preference.copy(systemUI = preference.systemUI.copy(qs = preference.systemUI.qs.copy(qsClockTextSize = event.value)))
         }
     }
 }
@@ -1974,25 +1566,8 @@ private fun SettingViewModel.onQSEvent(event: SystemUIEvent.QS) {
 private fun SettingViewModel.onAODEvent(event: SystemUIEvent.AOD) {
     updateData { preference ->
         when (event) {
-            is SystemUIEvent.AOD.HideAODStatusBar -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        aod = preference.systemUI.aod.copy(
-                            hideAODStatusBar = event.value
-                        )
-                    )
-                )
-            }
-
-            is SystemUIEvent.AOD.AODLockSupportLunar -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        aod = preference.systemUI.aod.copy(
-                            aodLockSupportLunar = event.value
-                        )
-                    )
-                )
-            }
+            is SystemUIEvent.AOD.HideAODStatusBar -> preference.copy(systemUI = preference.systemUI.copy(aod = preference.systemUI.aod.copy(hideAODStatusBar = event.value)))
+            is SystemUIEvent.AOD.AODLockSupportLunar -> preference.copy(systemUI = preference.systemUI.copy(aod = preference.systemUI.aod.copy(aodLockSupportLunar = event.value)))
         }
     }
 }
@@ -2000,75 +1575,13 @@ private fun SettingViewModel.onAODEvent(event: SystemUIEvent.AOD) {
 private fun SettingViewModel.onOtherEvent(event: SystemUIEvent.Other) {
     updateData { preference ->
         when (event) {
-            is SystemUIEvent.Other.CustomPowerMenu -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        other = preference.systemUI.other.copy(
-                            customPowerMenu = event.value
-                        )
-                    )
-                )
-            }
-
-            is SystemUIEvent.Other.PowerMenuActions -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        other = preference.systemUI.other.copy(
-                            powerMenuActions = PowerMenuAction.normalize(event.value)
-                        )
-                    )
-                )
-            }
-
-            is SystemUIEvent.Other.DisableScreenshotCaptureSound -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        other = preference.systemUI.other.copy(
-                            disableScreenshotCaptureSound = event.value
-                        )
-                    )
-                )
-            }
-
-            is SystemUIEvent.Other.DisableNotificationGrouping -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        other = preference.systemUI.other.copy(
-                            disableNotificationGrouping = event.value
-                        )
-                    )
-                )
-            }
-
-            is SystemUIEvent.Other.AutoExpandNotifications -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        other = preference.systemUI.other.copy(
-                            autoExpandNotifications = event.value
-                        )
-                    )
-                )
-            }
-
-            is SystemUIEvent.Other.HideOngoingActivityMedia -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        other = preference.systemUI.other.copy(
-                            hideOngoingActivityMedia = event.value
-                        )
-                    )
-                )
-            }
-
-            is SystemUIEvent.Other.HideOngoingActivityMediaPackages -> {
-                preference.copy(
-                    systemUI = preference.systemUI.copy(
-                        other = preference.systemUI.other.copy(
-                            hideOngoingActivityMediaPackages = event.value
-                        )
-                    )
-                )
-            }
+            is SystemUIEvent.Other.CustomPowerMenu -> preference.copy(systemUI = preference.systemUI.copy(other = preference.systemUI.other.copy(customPowerMenu = event.value)))
+            is SystemUIEvent.Other.PowerMenuActions -> preference.copy(systemUI = preference.systemUI.copy(other = preference.systemUI.other.copy(powerMenuActions = PowerMenuAction.normalize(event.value))))
+            is SystemUIEvent.Other.DisableScreenshotCaptureSound -> preference.copy(systemUI = preference.systemUI.copy(other = preference.systemUI.other.copy(disableScreenshotCaptureSound = event.value)))
+            is SystemUIEvent.Other.DisableNotificationGrouping -> preference.copy(systemUI = preference.systemUI.copy(other = preference.systemUI.other.copy(disableNotificationGrouping = event.value)))
+            is SystemUIEvent.Other.AutoExpandNotifications -> preference.copy(systemUI = preference.systemUI.copy(other = preference.systemUI.other.copy(autoExpandNotifications = event.value)))
+            is SystemUIEvent.Other.HideOngoingActivityMedia -> preference.copy(systemUI = preference.systemUI.copy(other = preference.systemUI.other.copy(hideOngoingActivityMedia = event.value)))
+            is SystemUIEvent.Other.HideOngoingActivityMediaPackages -> preference.copy(systemUI = preference.systemUI.copy(other = preference.systemUI.other.copy(hideOngoingActivityMediaPackages = event.value)))
         }
     }
 }
