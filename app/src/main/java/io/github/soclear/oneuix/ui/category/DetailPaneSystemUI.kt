@@ -423,9 +423,6 @@ fun DetailPaneSystemUI(
                         title = stringResource(
                             id = R.string.fold7CustomDoubleLineClockScale_title
                         ),
-                        summary = stringResource(
-                            id = R.string.fold7CustomDoubleLineClockScale_summary
-                        ),
                         checked = uiState.statusBar.useFold7CustomDoubleLineClockScale,
                         onCheckedChange = {
                             onEvent(
