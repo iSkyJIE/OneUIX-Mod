@@ -45,11 +45,10 @@
     <string name="statusBarDoubleLineClockSize_extraLarge">Extra large</string>
     <string name="statusBarDoubleLineClockGap_title">Double-line clock line gap</string>
     <string name="statusBarDoubleLineClockGap_summary">Current gap: %1$.1f dp; applies immediately.</string>
-    <string name="fold7CustomDoubleLineClockScale_title">Use Fold7 custom double-line sizes</string>
-    <string name="fold7CustomDoubleLineClockScale_summary">Default: time 1.00×, date 0.80×. Fold7 only; changes apply immediately.</string>
-    <string name="fold7DoubleLineClockTimeScale_title">Fold7 time scale</string>
+    <string name="fold7CustomDoubleLineClockScale_title">Use custom double-line text size</string>
+    <string name="fold7DoubleLineClockTimeScale_title">Upper text scale</string>
     <string name="fold7DoubleLineClockTimeScale_summary">Current time scale: %1$.2f×</string>
-    <string name="fold7DoubleLineClockDateScale_title">Fold7 date scale</string>
+    <string name="fold7DoubleLineClockDateScale_title">Lower text scale</string>
     <string name="fold7DoubleLineClockDateScale_summary">Current date scale: %1$.2f×</string>
     <string name="setStatusBarClockTextScale_title">Set status bar clock scale factor</string>
     <string name="restartSystemUI_success">System UI restart requested</string>
@@ -172,19 +171,4 @@
     <string name="bypassWatchPairingRegionCheck_title">Bypass watch pairing region checks</string>
     <string name="bypassWatchPairingRegionCheck_summary">Bypass region, CSC, and unsupported-phone pairing checks</string>
     <string name="supplementChinaWearOsGms_title">Supplement China WearOS GMS</string>
-    <string name="supplementChinaWearOsGms_summary">If WearOS CN does not add it automatically, add com.google.android.wearable.app.cn to the download list</string>
-    <string name="restartSystemUI">Reboot System UI</string>
-    <string name="restartRecovery">Reboot to recovery</string>
-    <string name="restartDownload">Reboot to download mode</string>
-    <string name="sideKeySettings">Side button settings</string>
-    <string name="allowAllRotation_title">Allow all rotation angles</string>
-    <string name="allowAllRotation_summary">Enable 180° rotation on phones (normally only available on tablets)</string>
-    <string name="liftFcmNetworkLimit_title">Lift FCM network limit</string>
-    <string name="liftFcmNetworkLimit_summary">Remove the China (including Hong Kong) firmware restriction that throttles GMS/FCM push network access</string>
-    <string name="disableScreenWakeOnPowerUnplugged_title">Keep screen off when unplugged</string>
-    <string name="disableWritingToolkitGlobally_title">Disable Writing Toolkit globally</string>
-    <string name="disableWritingToolkitGlobally_summary">Removes Samsung Writing Toolkit from text selection menus in all apps through the System Framework</string>
-    <string name="backup_config">Back up config</string>
-    <string name="restore_config">Restore config</string>
-    <string name="restore_failed">Restore failed, the file may be corrupted</string>
 </resources>
