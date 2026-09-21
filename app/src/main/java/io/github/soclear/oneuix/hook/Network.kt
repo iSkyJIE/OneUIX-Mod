@@ -53,7 +53,8 @@ object Network {
 
     fun showSeparateUpDownNetworkSpeeds(
         loadPackageParam: LoadPackageParam,
-        intervalMillisecond: Long = 3000L
+        intervalMillisecond: Long = 3000L,
+        thresholdKb: Int = 0
     ) {
         if (loadPackageParam.packageName != Package.SYSTEMUI || intervalMillisecond <= 0L) {
             return
@@ -115,6 +116,8 @@ object Network {
             ): String {
                 val txBytesPerSecond = (current.totalTx - previous.totalTx) / actualIntervalSeconds
                 val rxBytesPerSecond = (current.totalRx - previous.totalRx) / actualIntervalSeconds
+                if (thresholdKb > 0 && txBytesPerSecond <= thresholdKb * 1024f &&
+                    rxBytesPerSecond <= thresholdKb * 1024f) return ""
                 return "${formatSpeed(txBytesPerSecond)}\n${formatSpeed(rxBytesPerSecond)}"
             }
 
