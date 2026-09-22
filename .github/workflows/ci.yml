@@ -18,6 +18,28 @@ jobs:
           distribution: 'zulu'
           java-version: '25'
           cache: 'gradle'
+      - name: Configure MOD signing when secrets are available
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+            umask 077
+            printf '%s' "$KEYSTORE_BASE64" | base64 --decode > app/release.keystore
+            {
+              printf 'storeFile=release.keystore\n'
+              printf 'storePassword=%s\n' "$KEYSTORE_PASSWORD"
+              printf 'keyAlias=%s\n' "$KEY_ALIAS"
+              printf 'keyPassword=%s\n' "$KEY_PASSWORD"
+            } > keystore.properties
+            echo "MOD_SIGNING_READY=true" >> "$GITHUB_ENV"
+            echo "MOD signing secrets loaded for this build."
+          else
+            echo "MOD_SIGNING_READY=false" >> "$GITHUB_ENV"
+            echo "MOD signing secrets are unavailable; CI will use the default debug certificate."
+          fi
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Get Short SHA
@@ -26,6 +48,16 @@ jobs:
         run: ./gradlew :common:testDebugUnitTest
       - name: Build Debug APK
         run: ./gradlew assembleDebug
+      - name: Verify APK signature and report certificate
+        run: |
+          APK_PATH=app/build/outputs/apk/debug/app-debug.apk
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
+          if [ -z "$APKSIGNER" ]; then
+            echo "::error::apksigner was not found"
+            exit 1
+          fi
+          "$APKSIGNER" verify --verbose --print-certs "$APK_PATH"
+          echo "MOD_SIGNING_READY=$MOD_SIGNING_READY"
       - name: Rename APK
         run: |
           SAFE_BRANCH_NAME=$(echo "${{ github.ref_name }}" | tr '/' '-')
