@@ -186,4 +186,6 @@
     <string name="backup_config">Back up config</string>
     <string name="restore_config">Restore config</string>
     <string name="restore_failed">Restore failed, the file may be corrupted</string>
+    <string name="networkSpeedThreshold_title">Network speed threshold</string>
+    <string name="networkSpeedThreshold_label">Threshold (KB/s)</string>
 </resources>
