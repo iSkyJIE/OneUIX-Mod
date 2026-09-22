@@ -2,6 +2,7 @@ package io.github.soclear.oneuix.hook
 
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface
+import io.github.soclear.oneuix.common.DoubleLineClockSettings
 import io.github.soclear.oneuix.common.Package
 import io.github.soclear.oneuix.hook.systemui.AOD
 import io.github.soclear.oneuix.hook.systemui.ESIM
@@ -264,12 +265,36 @@ class Main : XposedModule() {
                     )
                 }
 
-                if (preference.systemUI.statusBar.setStatusBarClockFormat) {
-                    val format = preference.systemUI.statusBar.statusBarClockFormat
-                    StatusBar.setStatusBarClockFormat(format)
+                val statusBarClockFormatEnabled =
+                    preference.systemUI.statusBar.setStatusBarClockFormat
+                val statusBarClockFormat = preference.systemUI.statusBar.statusBarClockFormat
+                val isDoubleLineStatusBarClock =
+                    statusBarClockFormatEnabled && statusBarClockFormat.contains('\n')
+
+                if (statusBarClockFormatEnabled) {
+                    val doubleLinePreset =
+                        preference.systemUI.statusBar.statusBarDoubleLineClockSize.ifBlank {
+                            DoubleLineClockSettings.fromLegacyScale(
+                                preference.systemUI.statusBar.statusBarClockTextScale
+                            )
+                        }
+                    StatusBar.setStatusBarClockFormat(
+                        format = statusBarClockFormat,
+                        doubleLinePreset = doubleLinePreset,
+                        doubleLineGapDp = preference.systemUI.statusBar.doubleLineClockGapDp,
+                        useIndependentDoubleLineScale =
+                            preference.systemUI.statusBar.useFold7CustomDoubleLineClockScale,
+                        upperLineScale =
+                            preference.systemUI.statusBar.fold7DoubleLineClockTimeScale,
+                        lowerLineScale =
+                            preference.systemUI.statusBar.fold7DoubleLineClockDateScale,
+                    )
                 }
 
-                if (preference.systemUI.statusBar.setStatusBarClockTextScale) {
+                if (
+                    preference.systemUI.statusBar.setStatusBarClockTextScale &&
+                        !isDoubleLineStatusBarClock
+                ) {
                     val scale = preference.systemUI.statusBar.statusBarClockTextScale
                     StatusBar.setStatusBarClockTextScale(scale)
                 }
