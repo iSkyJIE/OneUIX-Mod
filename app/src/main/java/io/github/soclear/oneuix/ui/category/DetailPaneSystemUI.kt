@@ -371,9 +371,23 @@ fun DetailPaneSystemUI(
                         onClick = {
                             var right = true
                             label = try {
-                                DateTimeFormatter
-                                    .ofPattern(tempDataTimeFormat)
-                                    .format(LocalDateTime.now())
+                                // MOD tokens are not Java DateTimeFormatter patterns.
+                                val customTokens = Regex("CNLUNAR|CNPERIOD|CNTIME|CNYEAR|CNZODIAC|CNSEASON")
+                                val preview = StringBuilder()
+                                var cursor = 0
+                                customTokens.findAll(tempDataTimeFormat).forEach { match ->
+                                    val standard = tempDataTimeFormat.substring(cursor, match.range.first)
+                                    if (standard.isNotEmpty()) {
+                                        preview.append(DateTimeFormatter.ofPattern(standard).format(LocalDateTime.now()))
+                                    }
+                                    preview.append(match.value)
+                                    cursor = match.range.last + 1
+                                }
+                                val trailing = tempDataTimeFormat.substring(cursor)
+                                if (trailing.isNotEmpty()) {
+                                    preview.append(DateTimeFormatter.ofPattern(trailing).format(LocalDateTime.now()))
+                                }
+                                preview.toString()
                             } catch (_: Throwable) {
                                 right = false
                                 "error"
