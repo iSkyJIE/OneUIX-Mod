@@ -110,7 +110,7 @@ fun DetailPaneSystemUI(
                 }
             }
         ) {
-            Text(text = stringResource(R.string.restartSystemUI))
+            Text(text = stringResource(CommonR.string.restartSystemUI))
         }
         DividerText(R.string.status_bar)
         Column {
