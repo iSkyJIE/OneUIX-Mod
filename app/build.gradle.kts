@@ -4,7 +4,6 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -14,11 +13,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "io.github.mod.oneuix"
+        applicationId = providers.gradleProperty("oneuix.applicationId").get()
         minSdk = 33
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 10
+        versionName = "1.8.0"
 
         ndk {
             // ABI过滤，只加载 arm 架构 64 位动态链接库
@@ -47,6 +46,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            if (hasKeystore) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
         release {
             if (hasKeystore) {
                 signingConfig = signingConfigs.getByName("release")
@@ -83,6 +87,14 @@ android {
 }
 
 dependencies {
+    implementation(project(":common"))
+    // Hooks are loaded by Xposed, not called by the settings UI.
+    implementation(project(":hook"))
+
+    // R8 needs the host-provided types when shrinking the final APK.
+    compileOnly(libs.libxposed.api)
+    compileOnly(project(":stub"))
+    implementation(libs.libxposed.service)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -93,10 +105,6 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
 
-    compileOnly(libs.xposed.api)
-    compileOnly(project(":stub"))
-
-    implementation(libs.dexkit)
     implementation(libs.adaptive)
     implementation(libs.adaptive.layout)
     implementation(libs.adaptive.navigation)

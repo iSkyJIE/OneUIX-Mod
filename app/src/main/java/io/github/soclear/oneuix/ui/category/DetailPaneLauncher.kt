@@ -7,7 +7,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import io.github.soclear.oneuix.R
-import io.github.soclear.oneuix.data.Preference
+import io.github.soclear.oneuix.common.Preference
 import io.github.soclear.oneuix.ui.SettingViewModel
 import io.github.soclear.oneuix.ui.component.SwitchItem
 
@@ -26,6 +26,19 @@ fun DetailPaneLauncher(
                 onCheckedChange = { onEvent(LauncherEvent.ShowMemoryUsageInRecents(it)) }
             )
         }
+        SwitchItem(
+            icon = ImageVector.vectorResource(id = R.drawable.tile_medium),
+            title = stringResource(id = R.string.recentsGridThreeRows_title),
+            summary = stringResource(id = R.string.recentsGridThreeRows_summary),
+            checked = uiState.recentsGridThreeRows,
+            onCheckedChange = { onEvent(LauncherEvent.RecentsGridThreeRows(it)) }
+        )
+        SwitchItem(
+            icon = ImageVector.vectorResource(id = R.drawable.block),
+            title = stringResource(id = R.string.hideRecentsCloseAllButton_title),
+            checked = uiState.hideRecentsCloseAllButton,
+            onCheckedChange = { onEvent(LauncherEvent.HideRecentsCloseAllButton(it)) }
+        )
         SwitchItem(
             icon = ImageVector.vectorResource(id = R.drawable.apps),
             title = stringResource(id = R.string.hideAppsSearchBar_title),
@@ -47,6 +60,12 @@ sealed interface LauncherEvent {
     value class ShowMemoryUsageInRecents(val value: Boolean) : LauncherEvent
 
     @JvmInline
+    value class RecentsGridThreeRows(val value: Boolean) : LauncherEvent
+
+    @JvmInline
+    value class HideRecentsCloseAllButton(val value: Boolean) : LauncherEvent
+
+    @JvmInline
     value class HideAppsSearchBar(val value: Boolean) : LauncherEvent
 
     @JvmInline
@@ -59,6 +78,18 @@ fun SettingViewModel.onLauncherEvent(event: LauncherEvent) {
             is LauncherEvent.ShowMemoryUsageInRecents -> preference.copy(
                 other = preference.other.copy(
                     showMemoryUsageInRecents = event.value
+                )
+            )
+
+            is LauncherEvent.RecentsGridThreeRows -> preference.copy(
+                other = preference.other.copy(
+                    recentsGridThreeRows = event.value
+                )
+            )
+
+            is LauncherEvent.HideRecentsCloseAllButton -> preference.copy(
+                other = preference.other.copy(
+                    hideRecentsCloseAllButton = event.value
                 )
             )
 
