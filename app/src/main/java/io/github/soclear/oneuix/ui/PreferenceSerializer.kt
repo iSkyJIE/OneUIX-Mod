@@ -64,24 +64,31 @@ object PreferenceSerializer : Serializer<Preference> {
                 Log.e(TAG, "Cannot parse production local preferences", it)
             }.getOrNull()
         }
-        val unsynced = localRaw?.let { raw ->
+        val syncMarker = localRaw?.let { raw ->
             runCatching {
-                ((IgnoreUnknownKeysJson.parseToJsonElement(raw) as? JsonObject)
-                    ?.get(SYNC_MARKER)?.jsonPrimitive?.booleanOrNull == false)
-            }.getOrDefault(false)
-        } ?: false
-        val remote = readRemote()
-        val selected = when {
-            unsynced && local != null -> local
-            remote != null && remote != defaultValue -> remote
-            local != null && local != defaultValue -> local
-            remote != null -> remote
-            local != null -> local
-            else -> defaultValue
+                (IgnoreUnknownKeysJson.parseToJsonElement(raw) as? JsonObject)
+                    ?.get(SYNC_MARKER)?.jsonPrimitive?.booleanOrNull
+            }.getOrNull()
         }
-        if (local != null && selected == local && (unsynced || remote == null || remote == defaultValue)
-            && local != remote) {
+        val unsynced = syncMarker == false
+        // Only this project's new writer adds the marker. A pre-upgrade local
+        // preference file is authoritative even if a rejected staging build has
+        // left a non-default shared preference behind.
+        val productionLocal = local != null && syncMarker == null
+        val remote = readRemote()
+        val selected = ProductionPreferenceMigration.select(
+            local = local,
+            remote = remote,
+            localUnsynced = unsynced,
+            localFromProduction = productionLocal,
+        )
+        if (local != null && selected == local && local != remote &&
+            (unsynced || productionLocal || remote == null || remote == defaultValue)) {
             writeRemote(local)
+        } else if (localRaw == null && remote == null) {
+            // A fresh installation must create the remote configuration too;
+            // otherwise the hook's first load finds no file and returns early.
+            writeRemote(defaultValue)
         }
         return selected
     }
