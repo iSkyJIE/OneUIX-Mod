@@ -1,0 +1,94 @@
+name: One-shot official-main-first upstream port
+
+on:
+  push:
+    branches:
+      - upgrade/from-main-upstream-180-20260922
+    paths:
+      - .github/workflows/port-main-first-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  port:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: upgrade/from-main-upstream-180-20260922
+          fetch-depth: 0
+      - name: Pin production and upstream sources
+        run: |
+          set -euo pipefail
+          MAIN=92312ebcfe7ab36cf18a55e90af8a0f5dfebb314
+          UPSTREAM=7aa73a036e066e79e6e2306256229dbe9f88dbb1
+          test "$GITHUB_REF_NAME" = upgrade/from-main-upstream-180-20260922
+          test -z "$(git status --porcelain)"
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$MAIN"
+          git merge-base --is-ancestor "$MAIN" HEAD
+          git remote add upstream https://github.com/SoClear/OneUIX.git
+          git fetch --no-tags upstream main
+          test "$(git rev-parse upstream/main)" = "$UPSTREAM"
+          echo 'Production MOD and upstream 1.8.0 SHAs verified.'
+      - name: Merge upstream and explicitly resolve eight audited conflicts
+        run: |
+          set -euo pipefail
+          RESULT=0
+          git -c user.name='OneUIX-Mod integration' -c user.email='integration@users.noreply.github.com' merge --no-commit --no-ff upstream/main || RESULT=$?
+          test "$RESULT" = 1
+          python3 - <<'PY'
+          import subprocess
+          expected = {
+              '.github/workflows/ci.yml', '.github/workflows/release.yml',
+              'app/build.gradle.kts', 'app/src/main/AndroidManifest.xml',
+              'app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt',
+              'app/src/main/java/io/github/soclear/oneuix/hook/util/PreferenceProvider.kt',
+              'hook/src/main/java/io/github/soclear/oneuix/hook/Main.kt',
+              'hook/src/main/java/io/github/soclear/oneuix/hook/util/StatusBarClockFormatter.kt',
+          }
+          actual = set(subprocess.check_output(
+              ['git', 'diff', '--name-only', '--diff-filter=U'], text=True).splitlines())
+          print('AUDITED_CONFLICTS:', *sorted(actual), sep='\n')
+          assert actual == expected, (actual - expected, expected - actual)
+          PY
+          # Official MOD CI/release workflows take precedence over upstream's other signing key.
+          git checkout --ours .github/workflows/ci.yml .github/workflows/release.yml
+          # Adopt upstream's new Gradle modules/manifest and libxposed entrypoint.
+          git checkout --theirs app/build.gradle.kts app/src/main/AndroidManifest.xml hook/src/main/java/io/github/soclear/oneuix/hook/Main.kt
+          # Never compile duplicate legacy hooks; main-specific algorithms are ported below.
+          git rm -f app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt
+          git rm -f app/src/main/java/io/github/soclear/oneuix/hook/util/PreferenceProvider.kt
+          python3 .github/scripts/port_official_main_statusbar.py
+          git add -A
+          test -z "$(git diff --name-only --diff-filter=U)"
+          git diff --cached --check
+          test "$(git show origin/main:app/build.gradle.kts | grep -c 'applicationId = \"io.github.mod.oneuix\"')" = 1
+          grep -Fx 'oneuix.applicationId=io.github.mod.oneuix' gradle.properties
+          grep -F 'DoubleLineClockStyle(0.82f, 0.76f, 0.66f, -0.65f)' hook/src/main/java/io/github/soclear/oneuix/hook/systemui/OfficialMainStatusBarMod.kt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'feat(upgrade): port production-main MOD status bar onto upstream 1.8.0 architecture'
+          # The ONLY writable ref is this main-derived test branch. Never push main.
+          git push origin HEAD:refs/heads/upgrade/from-main-upstream-180-20260922
+      - name: Compile migrated source and run common tests
+        run: |
+          chmod +x gradlew
+          ./gradlew :common:testDebugUnitTest assembleDebug --no-daemon
+      - name: Verify new APK package identity
+        if: success()
+        run: |
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
+          "$AAPT" dump badging "$APK" | head -n 1
+          "$AAPT" dump badging "$APK" | head -n 1 | grep -F "name='io.github.mod.oneuix'"
+      - name: Upload diagnostic APK for integration inspection only
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: MAIN-DERIVED-UPSTREAM180-COMPILE-ONLY
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+          archive: false
