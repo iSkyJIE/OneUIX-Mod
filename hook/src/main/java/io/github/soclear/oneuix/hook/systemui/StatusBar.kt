@@ -227,33 +227,22 @@ object StatusBar {
     ) {
         if (param.packageName != Package.SYSTEMUI) return
 
-        val presetScale = DoubleLineClockSettings.presetScale(doubleLinePreset)
-        val upperScale = if (useIndependentDoubleLineScale) {
-            DoubleLineClockSettings.timeScale(upperLineScale)
-        } else {
-            presetScale
-        }
-        val lowerScale = if (useIndependentDoubleLineScale) {
-            DoubleLineClockSettings.dateScale(lowerLineScale)
-        } else {
-            presetScale
-        }
-        val lineGapDp = DoubleLineClockSettings.lineGapDp(doubleLineGapDp)
+        StatusBarDoubleLineRuntime.install(
+            preset = doubleLinePreset,
+            gapDp = doubleLineGapDp,
+            independent = useIndependentDoubleLineScale,
+            upperScale = upperLineScale,
+            lowerScale = lowerLineScale,
+        )
 
         setStatusBarClockText(
             block = { StatusBarClockFormatSupport.format(format) },
-            upperLineScale = upperScale,
-            lowerLineScale = lowerScale,
-            lineGapDp = lineGapDp,
         )
     }
 
     context(xposedModule: XposedModule, param: XposedModuleInterface.PackageReadyParam)
     private fun setStatusBarClockText(
         block: () -> String,
-        upperLineScale: Float = 1f,
-        lowerLineScale: Float = 1f,
-        lineGapDp: Float = 0f,
     ) = afterAttach {
         if (param.packageName != Package.SYSTEMUI) return@afterAttach
         try {
@@ -276,33 +265,9 @@ object StatusBar {
                                 ellipsize = ellipsize,
                             )
                         }
-                        setSingleLine(false)
-                        maxLines = 2
-                        minLines = 2
-                        includeFontPadding = false
-                        ellipsize = null
-                        setHorizontallyScrolling(false)
-                        setLineSpacing(lineGapDp * resources.displayMetrics.density, 1f)
-
-                        val styledText = SpannableString(dateTime)
-                        if (lineBreak > 0) {
-                            styledText.setSpan(
-                                RelativeSizeSpan(upperLineScale),
-                                0,
-                                lineBreak,
-                                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
-                            )
-                        }
-                        if (lineBreak + 1 < styledText.length) {
-                            styledText.setSpan(
-                                RelativeSizeSpan(lowerLineScale),
-                                lineBreak + 1,
-                                styledText.length,
-                                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
-                            )
-                        }
-                        text = styledText
+                        StatusBarDoubleLineRuntime.apply(this, dateTime)
                     } else {
+                        StatusBarDoubleLineRuntime.unregister(this)
                         setSingleLine(true)
                         maxLines = 1
                         minLines = 1
