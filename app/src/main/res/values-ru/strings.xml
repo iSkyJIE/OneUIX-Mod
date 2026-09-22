@@ -1,8 +1,7 @@
 <resources>
-    <string name="app_name">One UI X</string>
+    <string name="app_name">OneUIX MOD</string>
     <string name="xposed_description">Расширение One UI для Samsung</string>
     <string name="module_disabled_tip">Пожалуйста, включите этот модуль в LSPosed</string>
-    <string name="close">Закрыть</string>
     <string name="confirm">Подтвердить</string>
     <string name="other">Другое</string>
     <string name="notification">Уведомления</string>
@@ -25,6 +24,8 @@
     <string name="supportRealTimeNetworkSpeed_summary">Настройки -> Уведомления -> Дополнительные параметры -> Скорость сети в реальном времени</string>
     <string name="showSeparateUpDownNetworkSpeeds_title">Раздельная скорость приема/передачи в строке состояния</string>
     <string name="showSeparateUpDownNetworkSpeeds_summary">Сверху — выгрузка, снизу — загрузка</string>
+    <string name="networkSpeedThreshold_title">Порог отображения скорости сети</string>
+    <string name="networkSpeedThreshold_label">Порог (КБ/с)</string>
     <string name="turnOn5gQsTile_title">Включить плитку 5G в быстрых настройках</string>
     <string name="turnOn5gQsTile_summary">Требуется выбрать «System UI» и «Настройки вызовов» в LSPosed</string>
     <string name="root5gQsTile_summary">Предоставьте Root-права приложению, затем добавьте плитку 5G вручную</string>
@@ -113,6 +114,9 @@
     <string name="addBrightnessProgressToQsBar_title">Показывать уровень яркости в панели быстрых настроек</string>
     <string name="addVolumeProgressToQsBar_title">Показывать уровень громкости в панели быстрых настроек</string>
     <string name="showMemoryUsageInRecents_title">Использование памяти в меню запущенных приложений</string>
+    <string name="recentsGridThreeRows_title">Три ряда в сетке недавних приложений</string>
+    <string name="recentsGridThreeRows_summary">Отображать стиль «Сетка» в меню недавних приложений в 3 ряда</string>
+    <string name="hideRecentsCloseAllButton_title">Скрыть кнопку «Закрыть все» в меню недавних приложений</string>
     <string name="showForcePeakRefreshRatePreference_title">Пункт «Частота обновления экрана» в параметрах разработчика</string>
     <string name="showForcePeakRefreshRatePreference_summary">Появится в поиске настроек как «Частота обновления экрана»</string>
     <string name="supportOutdoorMode_title">Разблокировать режим “На улице”</string>
@@ -152,9 +156,6 @@
     <string name="bypassWatchPairingRegionCheck_summary">Обход проверок региона, CSC и неподдерживаемого телефона</string>
     <string name="supplementChinaWearOsGms_title">Добавить China WearOS GMS</string>
     <string name="supplementChinaWearOsGms_summary">Если WearOS CN не добавляет его автоматически, добавить com.google.android.wearable.app.cn в список загрузки</string>
-    <string name="restartSystemUI">Перезапуск System UI</string>
-    <string name="restartRecovery">Перезагрузка в Recovery</string>
-    <string name="restartDownload">Перезагрузка в режим Download</string>
     <string name="sideKeySettings">Настройки боковой кнопки</string>
     <string name="allowAllRotation_title">Разрешить все углы поворота</string>
     <string name="allowAllRotation_summary">Включить поворот на 180° на телефонах (обычно доступно только на планшетах)</string>

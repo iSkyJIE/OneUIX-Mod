@@ -1,54 +1,109 @@
 name: Release
 
+# Match upstream's release-created -> signed APK -> GitHub Release asset flow.
+# Create the v1.1.0 tag and Release only after branch testing and merging to main.
 on:
   release:
     types: [created]
+
+permissions:
+  contents: read
 
 jobs:
   build:
     permissions:
       contents: write
-
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-
-      - name: Set up JDK
-        uses: actions/setup-java@v5
         with:
-          distribution: 'zulu'
-          java-version: '25'
-          cache: 'gradle'
+          fetch-depth: 0
+          ref: ${{ github.event.release.tag_name }}
 
-      - name: Decode Keystore
-        run: |
-          echo ${{ secrets.KEYSTORE_BASE64 }} | base64 -d > app/release.keystore
-
-      - name: Set up keystore properties
+      - name: Verify MOD release tag belongs to main
         env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          git fetch origin main
+          git merge-base --is-ancestor HEAD origin/main
+          test "$(git rev-parse HEAD)" = "$(git rev-list -n 1 "$RELEASE_TAG")"
+          grep -Fx 'oneuix.applicationId=io.github.mod.oneuix' gradle.properties
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: zulu
+          java-version: '25'
+          cache: gradle
+
+      - name: Set up original MOD release signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          echo "storeFile=release.keystore" > keystore.properties
-          echo "storePassword=$KEYSTORE_PASSWORD" >> keystore.properties
-          echo "keyAlias=$KEY_ALIAS" >> keystore.properties
-          echo "keyPassword=$KEY_PASSWORD" >> keystore.properties
+          set -euo pipefail
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo '::error::MOD signing secrets are not fully configured'
+            exit 1
+          fi
+          umask 077
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > app/release.keystore
+          {
+            printf 'storeFile=release.keystore\n'
+            printf 'storePassword=%s\n' "$KEYSTORE_PASSWORD"
+            printf 'keyAlias=%s\n' "$KEY_ALIAS"
+            printf 'keyPassword=%s\n' "$KEY_PASSWORD"
+          } > keystore.properties
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
-      - name: Build Release APK
-        run: ./gradlew assembleRelease
-
-      - name: Rename APK
+      - name: Run tests and build the signed release APK
         run: |
-          mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/OneUIX-Mod_${{ github.ref_name }}.apk
+          chmod +x gradlew
+          ./gradlew :app:testDebugUnitTest :common:testDebugUnitTest assembleRelease --no-daemon
 
-      - name: Upload Release Assets
+      - name: Verify certificate, branding, version tag and upgrade identity
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          EXPECTED_MOD_CERT: 3cca67360758a4956796fcf6d8c726daf92b581532a1bb7e81211c8107bc7e09
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
+          test -n "$AAPT" && test -n "$APKSIGNER"
+          SIGNING_INFO=$("$APKSIGNER" verify --verbose --print-certs "$APK")
+          printf '%s\n' "$SIGNING_INFO" | grep -F 'Verified using v2 scheme (APK Signature Scheme v2): true'
+          CERT=$(printf '%s\n' "$SIGNING_INFO" | sed -n 's/^.*certificate SHA-256 digest: //p' | head -n 1)
+          test "$CERT" = "$EXPECTED_MOD_CERT"
+          BADGING=$("$AAPT" dump badging "$APK")
+          printf '%s\n' "$BADGING" | grep -F "name='io.github.mod.oneuix'"
+          printf '%s\n' "$BADGING" | grep -F "application-label:'OneUIX MOD'"
+          VERSION_NAME=$(printf '%s\n' "$BADGING" | head -n 1 | sed -n "s/.*versionName='\([^']*\)'.*/\1/p")
+          VERSION_CODE=$(printf '%s\n' "$BADGING" | head -n 1 | sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p")
+          test "$RELEASE_TAG" = "v$VERSION_NAME"
+          test -n "$VERSION_CODE"
+          curl --fail --location --retry 3 --silent --show-error \
+            https://github.com/iSkyJIE/OneUIX-Mod/releases/download/v1.0.0/OneUIX-Mod_v1.0.0.apk \
+            --output production-v1.0.0.apk
+          OLD_CERT=$("$APKSIGNER" verify --print-certs production-v1.0.0.apk | sed -n 's/^.*certificate SHA-256 digest: //p' | head -n 1)
+          test "$CERT" = "$OLD_CERT"
+          OLD_CODE=$("$AAPT" dump badging production-v1.0.0.apk | head -n 1 | sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p")
+          test -n "$OLD_CODE" && test "$VERSION_CODE" -gt "$OLD_CODE"
+          echo "MOD release identity verified: $RELEASE_TAG, versionCode=$VERSION_CODE, certificate=$CERT"
+
+      - name: Rename APK using existing MOD release naming convention
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          mv app/build/outputs/apk/release/app-release.apk "app/build/outputs/apk/release/OneUIX-Mod_${RELEASE_TAG}.apk"
+
+      - name: Upload APK to the created GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            app/build/outputs/apk/release/OneUIX-Mod_*.apk
+          files: app/build/outputs/apk/release/OneUIX-Mod_*.apk
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

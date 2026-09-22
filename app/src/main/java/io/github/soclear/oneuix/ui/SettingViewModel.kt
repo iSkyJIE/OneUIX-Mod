@@ -16,8 +16,9 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import io.github.soclear.oneuix.data.IgnoreUnknownKeysJson
-import io.github.soclear.oneuix.data.Preference
+import io.github.soclear.oneuix.common.IgnoreUnknownKeysJson
+import io.github.soclear.oneuix.common.Preference
+import io.github.soclear.oneuix.common.ProductionPreferenceMigration
 import io.github.soclear.oneuix.ui.category.Category
 import io.github.soclear.oneuix.ui.category.CategoryAppInfo
 import java.io.InputStream
@@ -69,9 +70,10 @@ class SettingViewModel(application: Application) : ViewModel() {
     }
 
     suspend fun restoreFrom(input: InputStream) = withContext(Dispatchers.IO) {
-        val restored = IgnoreUnknownKeysJson.decodeFromString(
-            Preference.serializer(), input.readBytes().decodeToString()
-        )
+        // Official-main backups stored these notification values under systemUI.other.
+        // Decode through the same compatibility path as the on-device upgrade, or
+        // importing a valid old backup silently drops the user's previous choices.
+        val restored = ProductionPreferenceMigration.decode(input.readBytes().decodeToString())
         dataStore.updateData { restored }
     }
 }
