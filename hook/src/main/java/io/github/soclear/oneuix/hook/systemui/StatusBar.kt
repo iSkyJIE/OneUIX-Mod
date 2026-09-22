@@ -22,8 +22,7 @@ import io.github.soclear.oneuix.common.Package
 import io.github.soclear.oneuix.hook.util.afterAttach
 import io.github.soclear.oneuix.hook.util.reflect
 import io.github.soclear.oneuix.hook.util.xlog
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import io.github.soclear.oneuix.hook.util.StatusBarClockFormatSupport
 import kotlin.math.roundToInt
 
 @SuppressLint("PrivateApi")
@@ -207,14 +206,7 @@ object StatusBar {
     context(xposedModule: XposedModule, param: XposedModuleInterface.PackageReadyParam)
     fun setStatusBarClockFormat(format: String) {
         if (param.packageName != Package.SYSTEMUI) return
-        val dateTimeFormatter = try {
-            DateTimeFormatter.ofPattern(format)
-        } catch (_: Throwable) {
-            DateTimeFormatter.ofPattern("HH:mm")
-        }
-        setStatusBarClockText {
-            dateTimeFormatter.format(LocalDateTime.now())
-        }
+        setStatusBarClockText { StatusBarClockFormatSupport.format(format) }
     }
 
     context(xposedModule: XposedModule, param: XposedModuleInterface.PackageReadyParam)
