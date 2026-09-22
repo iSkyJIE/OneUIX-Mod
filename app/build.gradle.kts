@@ -16,7 +16,7 @@ android {
         applicationId = providers.gradleProperty("oneuix.applicationId").get()
         minSdk = 33
         targetSdk = 37
-        versionCode = 2
+        versionCode = 11
         versionName = "1.1.0"
 
         ndk {
