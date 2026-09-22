@@ -4,6 +4,7 @@ import android.os.Build
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.rememberCoroutineScope
@@ -29,6 +30,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -46,11 +48,11 @@ import io.github.soclear.oneuix.R
 import io.github.soclear.oneuix.common.ONE_UI_VERSION
 import io.github.soclear.oneuix.common.PowerMenuAction
 import io.github.soclear.oneuix.common.Preference
+import io.github.soclear.oneuix.hook.util.StatusBarClockFormatter
 import io.github.soclear.oneuix.ui.SettingViewModel
 import io.github.soclear.oneuix.ui.component.SelectItem
 import io.github.soclear.oneuix.ui.component.SwitchItem
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
 import io.github.soclear.oneuix.common.R as CommonR
 
@@ -415,50 +417,45 @@ fun DetailPaneSystemUI(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(horizontal = 16.dp),
                 ) {
-                    var tempDataTimeFormat by remember {
+                    var tempDataTimeFormat by remember(uiState.statusBar.statusBarClockFormat) {
                         mutableStateOf(uiState.statusBar.statusBarClockFormat)
                     }
-                    var label by remember { mutableStateOf("") }
+                    var previewNow by remember { mutableStateOf(LocalDateTime.now()) }
+                    LaunchedEffect(Unit) {
+                        while (true) {
+                            previewNow = LocalDateTime.now()
+                            delay(1_000L)
+                        }
+                    }
+                    // Same formatter as SystemUI: expand all MOD tokens when typing or time changes.
+                    val preview = runCatching {
+                        StatusBarClockFormatter.format(tempDataTimeFormat, previewNow)
+                    }.getOrNull()
                     OutlinedTextField(
                         value = tempDataTimeFormat,
                         onValueChange = { tempDataTimeFormat = it },
                         modifier = Modifier.weight(1f),
-                        label = { Text(text = label) }
+                        label = { Text(text = stringResource(id = R.string.setStatusBarClockFormat_title)) },
+                        supportingText = {
+                            Text(
+                                text = if (preview == null) {
+                                    stringResource(id = R.string.clockFormatPreview_invalid)
+                                } else {
+                                    stringResource(id = R.string.clockFormatPreview_result, preview)
+                                },
+                                maxLines = 4,
+                            )
+                        },
+                        isError = preview == null,
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = {
-                            var right = true
-                            label = try {
-                                // MOD tokens are not Java DateTimeFormatter patterns.
-                                val customTokens = Regex("CNLUNAR|CNPERIOD|CNTIME|CNYEAR|CNZODIAC|CNSEASON")
-                                val preview = StringBuilder()
-                                var cursor = 0
-                                customTokens.findAll(tempDataTimeFormat).forEach { match ->
-                                    val standard = tempDataTimeFormat.substring(cursor, match.range.first)
-                                    if (standard.isNotEmpty()) {
-                                        preview.append(DateTimeFormatter.ofPattern(standard).format(LocalDateTime.now()))
-                                    }
-                                    preview.append(match.value)
-                                    cursor = match.range.last + 1
-                                }
-                                val trailing = tempDataTimeFormat.substring(cursor)
-                                if (trailing.isNotEmpty()) {
-                                    preview.append(DateTimeFormatter.ofPattern(trailing).format(LocalDateTime.now()))
-                                }
-                                preview.toString()
-                            } catch (_: Throwable) {
-                                right = false
-                                "error"
+                            if (preview != null) {
+                                onEvent(SystemUIEvent.StatusBar.StatusBarClockFormat(tempDataTimeFormat))
                             }
-                            if (right) {
-                                onEvent(
-                                    SystemUIEvent.StatusBar.StatusBarClockFormat(
-                                        tempDataTimeFormat
-                                    )
-                                )
-                            }
-                        }
+                        },
+                        enabled = preview != null,
                     ) {
                         Text(text = stringResource(id = R.string.confirm))
                     }

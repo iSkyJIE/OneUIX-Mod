@@ -37,6 +37,8 @@
     <string name="immersiveModeQsTile_title">Enable Immersive mode Quick Settings tile</string>
     <string name="rootImmersiveModeQsTile_summary">Requires root access. Add the tile manually; tap it to hide or restore the status bar</string>
     <string name="setStatusBarClockFormat_title">Set status bar date and time format</string>
+    <string name="clockFormatPreview_result">Preview: %1$s</string>
+    <string name="clockFormatPreview_invalid">Invalid date/time format</string>
     <string name="statusBarDoubleLineClockSize_title">Double-line status bar clock size</string>
     <string name="statusBarDoubleLineClockSize_summary">Large sizes may not fit on some devices.</string>
     <string name="statusBarDoubleLineClockSize_small">Small</string>

@@ -1,5 +1,6 @@
 package io.github.soclear.oneuix.hook.systemui
 
+import android.graphics.Rect
 import android.os.FileObserver
 import android.text.SpannableString
 import android.text.Spanned
@@ -74,8 +75,18 @@ object StatusBarDoubleLineRuntime {
         view.includeFontPadding = false
         view.ellipsize = null
         view.setHorizontallyScrolling(false)
+        // Zero extra dp should give compact visible glyph spacing rather than
+        // Android's full ascent/descent leading. Bound the correction to 30%
+        // and scale it to the smaller line to avoid colliding Chinese text.
+        val inkBounds = Rect()
+        view.paint.getTextBounds("国", 0, 1, inkBounds)
+        val metrics = view.paint.fontMetrics
+        val naturalLineHeight = metrics.descent - metrics.ascent
+        val unusedLeading = (naturalLineHeight - inkBounds.height().toFloat())
+            .coerceIn(0f, naturalLineHeight * 0.30f) *
+            minOf(currentStyle.upperScale, currentStyle.lowerScale)
         view.setLineSpacing(
-            currentStyle.gapDp * view.resources.displayMetrics.density,
+            currentStyle.gapDp * view.resources.displayMetrics.density - unusedLeading,
             1f,
         )
 
