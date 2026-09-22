@@ -30,6 +30,12 @@ GitHub Actions run `35738894785` checked that MOD main and upstream main matched
 
 Auto-merged paths are **not** proof of semantic preservation. Manually inspect `DetailPaneSystemUI.kt`, `Preference.kt`, custom notification settings migration, Chinese/English string resources, launcher/recents behavior and any status bar customizations.
 
+## Signing and package compatibility: independently verified
+
+- Production app Gradle source explicitly sets `applicationId = "io.github.mod.oneuix"`, `versionCode = 1`, `versionName = "1.0.0"`.
+- Previous staging's `gradle.properties` also sets `oneuix.applicationId=io.github.mod.oneuix`, so its application ID is **not in itself** a confirmed regression. The new branch must preserve this identity when adopting upstream's property-based ID.
+- Official upstream `release.yml` hard-codes expected signing certificate SHA-256 `3cfb2d32db4526e9cce22a0092a7d6819659db433cfec613fed68d44d999682a`, which is **different** from the MOD certificate actually shown by #522 CI: `3cca67360758a4956796fcf6d8c726daf92b581532a1bb7e81211c8107bc7e09`. Do not accept upstream's release workflow certificate pin unchanged or mistake an upstream signature for a MOD-compatible update. Verify the old production certificate rather than assuming matching app IDs suffice.
+
 ## Release gate
 
 1. Build only on the correctly main-derived integration branch. Protect `main` from all automated writes.
