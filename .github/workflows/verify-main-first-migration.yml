@@ -7,9 +7,15 @@ on:
     paths:
       - .github/workflows/verify-main-first-migration.yml
       - app/src/main/java/io/github/soclear/oneuix/ui/PreferenceSerializer.kt
+      - app/src/main/java/io/github/soclear/oneuix/ui/SettingViewModel.kt
+      - app/src/main/java/io/github/soclear/oneuix/ui/category/DetailPaneSystemUI.kt
       - app/src/test/**
+      - common/src/main/java/io/github/soclear/oneuix/common/Preference.kt
       - common/src/main/java/io/github/soclear/oneuix/common/ProductionPreferenceMigration.kt
+      - hook/src/main/java/io/github/soclear/oneuix/hook/Main.kt
       - hook/src/main/java/io/github/soclear/oneuix/hook/systemui/OfficialMainStatusBarMod.kt
+      - hook/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt
+      - hook/src/main/java/io/github/soclear/oneuix/hook/util/PreferenceProvider.kt
 
 permissions:
   contents: read
@@ -36,6 +42,7 @@ jobs:
           grep -Fx 'oneuix.applicationId=io.github.mod.oneuix' gradle.properties
           grep -F 'DoubleLineClockStyle(0.82f, 0.76f, 0.66f, -0.65f)' hook/src/main/java/io/github/soclear/oneuix/hook/systemui/OfficialMainStatusBarMod.kt
           grep -F 'Build.MODEL.startsWith("SM-F966", ignoreCase = true)' hook/src/main/java/io/github/soclear/oneuix/hook/systemui/OfficialMainStatusBarMod.kt
+          grep -F 'ProductionPreferenceMigration.decode(input.readBytes().decodeToString())' app/src/main/java/io/github/soclear/oneuix/ui/SettingViewModel.kt
           git diff --check "$MAIN" HEAD
       - name: Compile and run migration and shared-unit tests
         run: |
