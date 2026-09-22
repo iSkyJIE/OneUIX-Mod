@@ -6,6 +6,13 @@ on:
       - upgrade/from-main-upstream-180-20260922
     paths:
       - .github/workflows/build-main-first-release-test.yml
+      - app/src/**
+      - common/src/**
+      - hook/src/**
+      - app/build.gradle.kts
+      - common/build.gradle.kts
+      - hook/build.gradle.kts
+      - gradle.properties
 
 permissions:
   contents: read
