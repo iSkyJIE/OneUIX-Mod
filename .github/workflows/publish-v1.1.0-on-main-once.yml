@@ -1,0 +1,130 @@
+name: Publish approved OneUIX MOD v1.1.0 once
+
+# The connected release workflow remains release-created for future versions.
+# This one-shot workflow bridges the approved main merge to a signed GitHub Release.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: github.repository == 'iSkyJIE/OneUIX-Mod'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Require approved main-based source and exact MOD release identity
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+          git merge-base --is-ancestor 92312ebcfe7ab36cf18a55e90af8a0f5dfebb314 HEAD
+          git merge-base --is-ancestor 748f06f0e28741b2a6df251624f7a59daeb0498f HEAD
+          grep -Fx 'oneuix.applicationId=io.github.mod.oneuix' gradle.properties
+          grep -Fx '        versionCode = 2' app/build.gradle.kts
+          grep -Fx '        versionName = "1.1.0"' app/build.gradle.kts
+          for resource in app/src/main/res/values{,-zh,-fr,-ru,-ko}/strings.xml; do
+            grep -F '<string name="app_name">OneUIX MOD</string>' "$resource"
+          done
+          test -z "$(git ls-remote --tags origin refs/tags/v1.1.0)"
+          if gh release view v1.1.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo '::error::Release v1.1.0 already exists; refuse duplicate publication'
+            exit 1
+          fi
+      - uses: actions/setup-java@v5
+        with:
+          distribution: zulu
+          java-version: '25'
+          cache: gradle
+      - name: Load existing official MOD signing identity
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_BASE64" && test -n "$KEYSTORE_PASSWORD"
+          test -n "$KEY_ALIAS" && test -n "$KEY_PASSWORD"
+          umask 077
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > app/release.keystore
+          {
+            printf 'storeFile=release.keystore\n'
+            printf 'storePassword=%s\n' "$KEYSTORE_PASSWORD"
+            printf 'keyAlias=%s\n' "$KEY_ALIAS"
+            printf 'keyPassword=%s\n' "$KEY_PASSWORD"
+          } > keystore.properties
+      - name: Rebuild and test final main as signed release
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew :app:testDebugUnitTest :common:testDebugUnitTest assembleRelease --no-daemon
+      - name: Verify v1.0.0 signing continuity and v1.1.0 package identity
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)
+          SIGNING_INFO=$("$APKSIGNER" verify --verbose --print-certs "$APK")
+          printf '%s\n' "$SIGNING_INFO" | grep -F 'Verified using v2 scheme (APK Signature Scheme v2): true'
+          NEW_CERT=$(printf '%s\n' "$SIGNING_INFO" | sed -n 's/^.*certificate SHA-256 digest: //p' | head -n 1)
+          test "$NEW_CERT" = '3cca67360758a4956796fcf6d8c726daf92b581532a1bb7e81211c8107bc7e09'
+          curl --fail --location --retry 3 --silent --show-error \
+            https://github.com/iSkyJIE/OneUIX-Mod/releases/download/v1.0.0/OneUIX-Mod_v1.0.0.apk \
+            --output /tmp/production-v1.0.0.apk
+          OLD_CERT=$("$APKSIGNER" verify --print-certs /tmp/production-v1.0.0.apk | sed -n 's/^.*certificate SHA-256 digest: //p' | head -n 1)
+          test "$NEW_CERT" = "$OLD_CERT"
+          OLD_CODE=$("$AAPT" dump badging /tmp/production-v1.0.0.apk | head -n 1 | sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p")
+          test "$OLD_CODE" = '1'
+          BADGING=$("$AAPT" dump badging "$APK")
+          printf '%s\n' "$BADGING" | head -n 1 | grep -F "name='io.github.mod.oneuix' versionCode='2' versionName='1.1.0'"
+          printf '%s\n' "$BADGING" | grep -F "application-label:'OneUIX MOD'"
+          for locale in zh fr ko ru; do
+            printf '%s\n' "$BADGING" | grep -F "application-label-${locale}:'OneUIX MOD'"
+          done
+          cp "$APK" app/build/outputs/apk/release/OneUIX-Mod_v1.1.0.apk
+          sha256sum app/build/outputs/apk/release/OneUIX-Mod_v1.1.0.apk
+      - name: Create official v1.1.0 GitHub Release with APK asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          cat > /tmp/oneuix-mod-v1.1.0-notes.md <<'EOF'
+          OneUIX MOD v1.1.0
+
+          - Upgrade from official MOD v1.0.0 and integrate upstream OneUIX through commit 748f06f (including the September 22 class-loading fix).
+          - Preserve MOD status-bar customization, five double-line clock presets, Fold7-specific sizing, date formatting tokens, vertical offsets and preference migration.
+          - Application label: OneUIX MOD. Android package: io.github.mod.oneuix. versionName 1.1.0; versionCode 2. APK signed with the existing v1.0.0 release certificate.
+          - The battery-information switch reveals Samsung's system battery page; battery-health percent is supplied by Samsung, not recalculated by MOD. A persistent 100% reading is not fixed or independently verified in this release.
+          - Automated tests and signed release build pass; complete on-device validation across Samsung models has not been established.
+          EOF
+          gh release create v1.1.0 app/build/outputs/apk/release/OneUIX-Mod_v1.1.0.apk \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title 'OneUIX MOD v1.1.0' --notes-file /tmp/oneuix-mod-v1.1.0-notes.md
+      - name: Confirm release asset matches locally signed package
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/oneuix-mod-publication-check
+          gh release download v1.1.0 --repo "$GITHUB_REPOSITORY" \
+            --pattern 'OneUIX-Mod_v1.1.0.apk' --dir /tmp/oneuix-mod-publication-check
+          cmp app/build/outputs/apk/release/OneUIX-Mod_v1.1.0.apk \
+            /tmp/oneuix-mod-publication-check/OneUIX-Mod_v1.1.0.apk
+          gh release view v1.1.0 --repo "$GITHUB_REPOSITORY" --json assets \
+            --jq '.assets[].name' | grep -Fx 'OneUIX-Mod_v1.1.0.apk'
+      - name: Remove completed one-shot publisher from main
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/publish-v1.1.0-on-main-once.yml
+          git commit -m 'chore: remove completed v1.1.0 release publisher'
+          git push origin HEAD:refs/heads/main
