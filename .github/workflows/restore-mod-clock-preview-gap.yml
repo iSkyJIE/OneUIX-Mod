@@ -20,17 +20,16 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          from textwrap import dedent
           import shutil
 
           def patch(path, old, new):
               p = Path(path)
               text = p.read_text(encoding='utf-8')
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'Expected exactly one match in {path}, found {count}')
+              if text.count(old) != 1:
+                  raise SystemExit(f'Expected exactly one match in {path}, got {text.count(old)}')
               p.write_text(text.replace(old, new, 1), encoding='utf-8')
 
-          # One formatter and one lunar implementation, shared by the UI and SystemUI.
           src = Path('hook/src/main/java/io/github/soclear/oneuix/hook/util')
           dst = Path('common/src/main/java/io/github/soclear/oneuix/hook/util')
           dst.mkdir(parents=True, exist_ok=True)
@@ -38,182 +37,151 @@ jobs:
               assert (src / name).is_file() and not (dst / name).exists(), name
               shutil.move(str(src / name), str(dst / name))
 
-          ui = 'app/src/main/java/io/github/soclear/oneuix/ui/category/DetailPaneSystemUI.kt'
-          patch(ui, 'import kotlinx.coroutines.launch\n', 'import kotlinx.coroutines.launch\nimport kotlinx.coroutines.delay\n')
-          patch(ui, 'import androidx.compose.runtime.Composable\n', 'import androidx.compose.runtime.Composable\nimport androidx.compose.runtime.LaunchedEffect\n')
-          patch(ui, 'import io.github.soclear.oneuix.common.Preference\n',
-                'import io.github.soclear.oneuix.common.Preference\nimport io.github.soclear.oneuix.hook.util.StatusBarClockFormatter\n')
-          old = '''                    var tempDataTimeFormat by remember {
-                          mutableStateOf(uiState.statusBar.statusBarClockFormat)
-                      }
-                      var label by remember { mutableStateOf("") }
-                      OutlinedTextField(
-                          value = tempDataTimeFormat,
-                          onValueChange = { tempDataTimeFormat = it },
-                          modifier = Modifier.weight(1f),
-                          label = { Text(text = label) }
-                      )
-                      Spacer(modifier = Modifier.width(8.dp))
-                      Button(
-                          onClick = {
-                              var right = true
-                              label = try {
-                                  // MOD tokens are not Java DateTimeFormatter patterns.
-                                  val customTokens = Regex("CNLUNAR|CNPERIOD|CNTIME|CNYEAR|CNZODIAC|CNSEASON")
-                                  val preview = StringBuilder()
-                                  var cursor = 0
-                                  customTokens.findAll(tempDataTimeFormat).forEach { match ->
-                                      val standard = tempDataTimeFormat.substring(cursor, match.range.first)
-                                      if (standard.isNotEmpty()) {
-                                          preview.append(DateTimeFormatter.ofPattern(standard).format(LocalDateTime.now()))
-                                      }
-                                      preview.append(match.value)
-                                      cursor = match.range.last + 1
-                                  }
-                                  val trailing = tempDataTimeFormat.substring(cursor)
-                                  if (trailing.isNotEmpty()) {
-                                      preview.append(DateTimeFormatter.ofPattern(trailing).format(LocalDateTime.now()))
-                                  }
-                                  preview.toString()
-                              } catch (_: Throwable) {
-                                  right = false
-                                  "error"
-                              }
-                              if (right) {
-                                  onEvent(
-                                      SystemUIEvent.StatusBar.StatusBarClockFormat(
-                                          tempDataTimeFormat
-                                      )
-                                  )
-                              }
-                          }
-                      ) {
-                          Text(text = stringResource(id = R.string.confirm))
-                      }
-          '''
-          # Dedent only the Python source's extra six spaces; preserve exact Kotlin indentation.
-          old = '\n'.join(line[6:] if line.startswith('      ') else line for line in old.split('\n'))
-          new = '''                    var tempDataTimeFormat by remember(uiState.statusBar.statusBarClockFormat) {
-                          mutableStateOf(uiState.statusBar.statusBarClockFormat)
-                      }
-                      var previewNow by remember { mutableStateOf(LocalDateTime.now()) }
-                      LaunchedEffect(Unit) {
-                          while (true) {
-                              previewNow = LocalDateTime.now()
-                              delay(1_000L)
-                          }
-                      }
-                      // Identical formatter to SystemUI: custom lunar and Chinese tokens are expanded,
-                      // not echoed as literal token names. Recompute on each edit and each second.
-                      val preview = runCatching {
-                          StatusBarClockFormatter.format(tempDataTimeFormat, previewNow)
-                      }.getOrNull()
-                      OutlinedTextField(
-                          value = tempDataTimeFormat,
-                          onValueChange = { tempDataTimeFormat = it },
-                          modifier = Modifier.weight(1f),
-                          label = { Text(text = stringResource(id = R.string.setStatusBarClockFormat_title)) },
-                          supportingText = {
-                              Text(
-                                  text = if (preview == null) {
-                                      stringResource(id = R.string.clockFormatPreview_invalid)
-                                  } else {
-                                      stringResource(id = R.string.clockFormatPreview_result, preview)
-                                  },
-                                  maxLines = 4,
-                              )
-                          },
-                          isError = preview == null,
-                      )
-                      Spacer(modifier = Modifier.width(8.dp))
-                      Button(
-                          onClick = {
-                              if (preview != null) {
-                                  onEvent(SystemUIEvent.StatusBar.StatusBarClockFormat(tempDataTimeFormat))
-                              }
-                          },
-                          enabled = preview != null,
-                      ) {
-                          Text(text = stringResource(id = R.string.confirm))
-                      }
-          '''
-          new = '\n'.join(line[6:] if line.startswith('      ') else line for line in new.split('\n'))
-          patch(ui, old, new)
-          patch(ui, 'import java.time.format.DateTimeFormatter\n', '')
-
-          for language, strings in (
-              ('values', '    <string name="clockFormatPreview_result">Preview: %1$s</string>\n    <string name="clockFormatPreview_invalid">Invalid date/time format</string>\n'),
-              ('values-zh', '    <string name="clockFormatPreview_result">实时预览：%1$s</string>\n    <string name="clockFormatPreview_invalid">格式有误，请检查输入</string>\n'),
+          ui = Path('app/src/main/java/io/github/soclear/oneuix/ui/category/DetailPaneSystemUI.kt')
+          s = ui.read_text(encoding='utf-8')
+          for old, new in (
+              ('import kotlinx.coroutines.launch\n', 'import kotlinx.coroutines.launch\nimport kotlinx.coroutines.delay\n'),
+              ('import androidx.compose.runtime.Composable\n', 'import androidx.compose.runtime.Composable\nimport androidx.compose.runtime.LaunchedEffect\n'),
+              ('import io.github.soclear.oneuix.common.Preference\n', 'import io.github.soclear.oneuix.common.Preference\nimport io.github.soclear.oneuix.hook.util.StatusBarClockFormatter\n'),
+              ('import java.time.format.DateTimeFormatter\n', ''),
           ):
-              path = f'app/src/main/res/{language}/strings.xml'
-              p = Path(path)
-              contents = p.read_text(encoding='utf-8')
-              if 'clockFormatPreview_result' in contents:
-                  raise SystemExit(f'Preview strings already defined: {path}')
+              if s.count(old) != 1:
+                  raise SystemExit(f'Clock UI import changed: {old}')
+              s = s.replace(old, new, 1)
+          start_marker = '                    var tempDataTimeFormat by remember {'
+          end_marker = '                }\n            }\n        }\n        if (\n'
+          if s.count(start_marker) != 1 or s.count(end_marker) != 1:
+              raise SystemExit('Clock editor structure changed; abort without replacing')
+          start = s.index(start_marker)
+          end = s.index(end_marker, start)
+          if 'customTokens.findAll(tempDataTimeFormat)' not in s[start:end]:
+              raise SystemExit('Old preview logic not found; abort')
+          replacement = dedent('''\
+              var tempDataTimeFormat by remember(uiState.statusBar.statusBarClockFormat) {
+                  mutableStateOf(uiState.statusBar.statusBarClockFormat)
+              }
+              var previewNow by remember { mutableStateOf(LocalDateTime.now()) }
+              LaunchedEffect(Unit) {
+                  while (true) {
+                      previewNow = LocalDateTime.now()
+                      delay(1_000L)
+                  }
+              }
+              // Same formatter as SystemUI: expand all MOD tokens when typing or time changes.
+              val preview = runCatching {
+                  StatusBarClockFormatter.format(tempDataTimeFormat, previewNow)
+              }.getOrNull()
+              OutlinedTextField(
+                  value = tempDataTimeFormat,
+                  onValueChange = { tempDataTimeFormat = it },
+                  modifier = Modifier.weight(1f),
+                  label = { Text(text = stringResource(id = R.string.setStatusBarClockFormat_title)) },
+                  supportingText = {
+                      Text(
+                          text = if (preview == null) {
+                              stringResource(id = R.string.clockFormatPreview_invalid)
+                          } else {
+                              stringResource(id = R.string.clockFormatPreview_result, preview)
+                          },
+                          maxLines = 4,
+                      )
+                  },
+                  isError = preview == null,
+              )
+              Spacer(modifier = Modifier.width(8.dp))
+              Button(
+                  onClick = {
+                      if (preview != null) {
+                          onEvent(SystemUIEvent.StatusBar.StatusBarClockFormat(tempDataTimeFormat))
+                      }
+                  },
+                  enabled = preview != null,
+              ) {
+                  Text(text = stringResource(id = R.string.confirm))
+              }
+          ''')
+          replacement = ''.join('                    ' + line if line.strip() else line
+                                for line in replacement.splitlines(keepends=True))
+          s = s[:start] + replacement + s[end:]
+          ui.write_text(s, encoding='utf-8')
+
+          for language, translations in (
+              ('values', ('Preview: %1$s', 'Invalid date/time format')),
+              ('values-zh', ('实时预览：%1$s', '格式有误，请检查输入')),
+          ):
+              path = Path(f'app/src/main/res/{language}/strings.xml')
+              s = path.read_text(encoding='utf-8')
+              if 'clockFormatPreview_result' in s:
+                  raise SystemExit('Preview strings already defined')
               marker = '    <string name="setStatusBarClockFormat_title">'
-              lines = contents.splitlines(keepends=True)
+              lines = s.splitlines(keepends=True)
               matches = [i for i, line in enumerate(lines) if line.startswith(marker)]
               if len(matches) != 1:
-                  raise SystemExit(f'Expected one clock title string in {path}')
-              lines.insert(matches[0] + 1, strings)
-              p.write_text(''.join(lines), encoding='utf-8')
+                  raise SystemExit(f'Expected a single format title in {path}')
+              preview, invalid = translations
+              lines.insert(matches[0] + 1,
+                  f'    <string name="clockFormatPreview_result">{preview}</string>\n'
+                  f'    <string name="clockFormatPreview_invalid">{invalid}</string>\n')
+              path.write_text(''.join(lines), encoding='utf-8')
 
           runtime = 'hook/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBarDoubleLineRuntime.kt'
           patch(runtime, 'import android.os.FileObserver\n', 'import android.graphics.Rect\nimport android.os.FileObserver\n')
           patch(runtime, '''        view.setLineSpacing(
-                  currentStyle.gapDp * view.resources.displayMetrics.density,
-                  1f,
-              )'''.replace('\n      ', '\n'), '''        // 0 dp means compact *visible glyph* spacing, not Android's full font
-                  // ascent/descent padding. Remove only the font's unused leading;
-                  // retain a bounded correction so large CJK glyphs cannot overlap.
+              currentStyle.gapDp * view.resources.displayMetrics.density,
+              1f,
+          )'''.replace('\n  ', '\n'), dedent('''\
+                  // Zero extra dp should give compact visible glyph spacing rather than
+                  // Android's full ascent/descent leading. Bound the correction to 30%
+                  // and scale it to the smaller line to avoid colliding Chinese text.
                   val inkBounds = Rect()
                   view.paint.getTextBounds("国", 0, 1, inkBounds)
-                  val fontMetrics = view.paint.fontMetrics
-                  val naturalLineHeight = fontMetrics.descent - fontMetrics.ascent
+                  val metrics = view.paint.fontMetrics
+                  val naturalLineHeight = metrics.descent - metrics.ascent
                   val unusedLeading = (naturalLineHeight - inkBounds.height().toFloat())
                       .coerceIn(0f, naturalLineHeight * 0.30f) *
                       minOf(currentStyle.upperScale, currentStyle.lowerScale)
                   view.setLineSpacing(
                       currentStyle.gapDp * view.resources.displayMetrics.density - unusedLeading,
                       1f,
-                  )'''.replace('\n      ', '\n'))
+                  )
+          ''').replace('\n', '\n        ').rstrip())
 
           test = Path('common/src/test/java/io/github/soclear/oneuix/hook/util/StatusBarClockFormatterTest.kt')
           test.parent.mkdir(parents=True, exist_ok=True)
           if test.exists():
-              raise SystemExit('Clock formatter test already exists')
-          test.write_text('''package io.github.soclear.oneuix.hook.util
+              raise SystemExit('Formatter test already exists')
+          test.write_text(dedent('''\
+              package io.github.soclear.oneuix.hook.util
 
-          import java.time.LocalDateTime
-          import org.junit.Assert.assertFalse
-          import org.junit.Assert.assertTrue
-          import org.junit.Test
+              import java.time.LocalDateTime
+              import org.junit.Assert.assertFalse
+              import org.junit.Assert.assertTrue
+              import org.junit.Test
 
-          class StatusBarClockFormatterTest {
-              @Test fun expandsEveryModTokenAndKeepsDoubleLine() {
-                  val pattern = "HH:mm\\nCNLUNAR CNPERIOD CNTIME CNYEAR CNZODIAC CNSEASON"
-                  val result = StatusBarClockFormatter.format(pattern, LocalDateTime.of(2026, 9, 22, 12, 34))
-                  assertTrue(result.startsWith("12:34\\n"))
-                  assertTrue(result.contains("中午"))
-                  assertTrue(result.contains("午时"))
-                  assertTrue(result.contains("秋"))
-                  for (token in listOf("CNLUNAR", "CNPERIOD", "CNTIME", "CNYEAR", "CNZODIAC", "CNSEASON")) {
-                      assertFalse(result.contains(token))
+              class StatusBarClockFormatterTest {
+                  @Test fun expandsEveryModTokenAndKeepsDoubleLine() {
+                      val pattern = "HH:mm\\nCNLUNAR CNPERIOD CNTIME CNYEAR CNZODIAC CNSEASON"
+                      val result = StatusBarClockFormatter.format(pattern, LocalDateTime.of(2026, 9, 22, 12, 34))
+                      assertTrue(result.startsWith("12:34\\n"))
+                      assertTrue(result.contains("中午"))
+                      assertTrue(result.contains("午时"))
+                      assertTrue(result.contains("秋"))
+                      for (token in listOf("CNLUNAR", "CNPERIOD", "CNTIME", "CNYEAR", "CNZODIAC", "CNSEASON")) {
+                          assertFalse(result.contains(token))
+                      }
+                  }
+
+                  @Test fun repeatedTokensExpandAndNormalPatternsStillWork() {
+                      val date = LocalDateTime.of(2026, 9, 22, 23, 0)
+                      assertTrue(StatusBarClockFormatter.format("CNTIME / CNTIME", date) == "子时 / 子时")
+                      assertTrue(StatusBarClockFormatter.format("HH:mm", date) == "23:00")
                   }
               }
-
-              @Test fun repeatedTokensExpandAndNormalPatternsStillWork() {
-                  val date = LocalDateTime.of(2026, 9, 22, 23, 0)
-                  val result = StatusBarClockFormatter.format("CNTIME / CNTIME", date)
-                  assertTrue(result == "子时 / 子时")
-                  assertTrue(StatusBarClockFormatter.format("HH:mm", date) == "23:00")
-              }
-          }
-          '''.replace('\n          ', '\n'), encoding='utf-8')
-          print('Clock preview now uses the common formatter; compact glyph gap and tests installed.')
+          '''), encoding='utf-8')
+          print('Formatter shared, live preview and compact gap updated; tests written.')
           PY
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -m 'fix(staging): real-time Chinese clock preview and compact zero-gap lines'
+          git commit -m 'fix(staging): live lunar time preview and compact double-line gap'
           git push origin HEAD:upstream-180-mod-ci-staging
