@@ -223,20 +223,25 @@ object StatusBar {
             xposedModule.hook(method).intercept { chain ->
                 val clockTextView = chain.thisObject as? TextView
                 val dateTime = block()
-                // Restore the original single-line behavior when a custom format changes.
+                // Match the MOD two-line text behavior while preserving the upstream single-line path.
       clockTextView?.apply {
           if (dateTime.indexOf(10.toChar()) >= 0) {
               setSingleLine(false)
               maxLines = 2
+              minLines = 2
               includeFontPadding = false
+              ellipsize = null
+              setHorizontallyScrolling(false)
           } else {
               setSingleLine(true)
               maxLines = 1
+              minLines = 1
               includeFontPadding = true
+              setLineSpacing(0f, 1f)
           }
       }
                 clockTextView?.text = dateTime
-                clockTextView?.contentDescription = dateTime
+                clockTextView?.contentDescription = dateTime.replace(10.toChar(), ' ')
                 null
             }
         } catch (t: Throwable) {
