@@ -1,5 +1,6 @@
 package io.github.soclear.oneuix.ui
 
+import io.github.soclear.oneuix.common.Preference
 import io.github.soclear.oneuix.common.ProductionPreferenceMigration
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -63,5 +64,43 @@ class ProductionPreferenceMigrationTest {
     @Test
     fun mainDefaultDoubleLineGapRemainsOneDp() {
         assertEquals(1f, ProductionPreferenceMigration.decode("{}").systemUI.statusBar.doubleLineClockGapDp, 0.001f)
+    }
+
+    @Test
+    fun officialMainSavedValuesOutrankLeftoverStagingRemote() {
+        val production = ProductionPreferenceMigration.decode(
+            """{"systemUI":{"statusBar":{"statusBarTopPaddingDp":3.5,"statusBarDoubleLineClockSize":"small"}}}"""
+        )
+        val staging = ProductionPreferenceMigration.decode(
+            """{"systemUI":{"statusBar":{"statusBarTopPaddingDp":7.0,"statusBarDoubleLineClockSize":"large"}}}"""
+        )
+        val selected = ProductionPreferenceMigration.select(
+            local = production, remote = staging,
+            localUnsynced = false, localFromProduction = true,
+        )
+        assertEquals(production, selected)
+        assertEquals(3.5f, selected.systemUI.statusBar.statusBarTopPaddingDp, 0.001f)
+        assertEquals("small", selected.systemUI.statusBar.statusBarDoubleLineClockSize)
+    }
+
+    @Test
+    fun offlineUserEditsWinButSyncedDataDefersToRemote() {
+        val offline = ProductionPreferenceMigration.decode(
+            """{"systemUI":{"statusBar":{"statusBarBottomPaddingDp":2.0}}}"""
+        )
+        val remote = ProductionPreferenceMigration.decode(
+            """{"systemUI":{"statusBar":{"statusBarBottomPaddingDp":5.0}}}"""
+        )
+        assertEquals(offline, ProductionPreferenceMigration.select(offline, remote, true, false))
+        assertEquals(remote, ProductionPreferenceMigration.select(offline, remote, false, false))
+    }
+
+    @Test
+    fun freshInstallationAndDefaultLocalNeverEraseExistingCustomRemote() {
+        val remote = ProductionPreferenceMigration.decode(
+            """{"systemUI":{"statusBar":{"statusBarTopPaddingDp":4.0}}}"""
+        )
+        assertEquals(Preference(), ProductionPreferenceMigration.select(null, null, false, false))
+        assertEquals(remote, ProductionPreferenceMigration.select(Preference(), remote, false, true))
     }
 }
