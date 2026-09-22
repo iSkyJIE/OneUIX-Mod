@@ -1,0 +1,44 @@
+name: Fix MOD clock line layout
+on:
+  push:
+    paths:
+      - '.github/workflows/mod-clock-layout-fix.yml'
+permissions:
+  contents: write
+jobs:
+  fix:
+    if: github.ref_name == 'upstream-180-mod-ci-staging'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: true
+      - name: Fix multiline and restore single-line layout
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('hook/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt')
+          s = p.read_text()
+          start = s.index('      // Preserve upstream single-line layout; enable multiline only for MOD formats.')
+          end = s.index('                clockTextView?.text = dateTime', start)
+          old = s[start:end]
+          assert old.count('setSingleLine(false)') == 1 and old.count('maxLines = 2') == 1
+          new = '''                // Restore the original single-line behavior when a custom format changes.
+                clockTextView?.apply {
+                    if (dateTime.indexOf(10.toChar()) >= 0) {
+                        setSingleLine(false)
+                        maxLines = 2
+                        includeFontPadding = false
+                    } else {
+                        setSingleLine(true)
+                        maxLines = 1
+                        includeFontPadding = true
+                    }
+                }
+          '''
+          p.write_text(s[:start] + new + s[end:])
+          PY
+          git diff --check
+          git add hook/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'fix(systemui): restore single-line clock after multiline format'
+          git push
