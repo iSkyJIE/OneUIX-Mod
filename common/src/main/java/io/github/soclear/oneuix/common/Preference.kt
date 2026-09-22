@@ -148,6 +148,7 @@ data class Preference(
         val makeAllUserAppsAvailable: Boolean = true,
         val setWeatherProviderCN: Boolean = false,
         val showMemoryUsageInRecents: Boolean = false,
+        val recentsGridThreeRows: Boolean = false,
         val hideRecentsCloseAllButton: Boolean = false,
         val showMorePlaybackSpeeds: Boolean = false,
         val redirectCustomTab: Boolean = false,
