@@ -58,6 +58,15 @@ jobs:
           git rm -f app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt
           git rm -f app/src/main/java/io/github/soclear/oneuix/hook/util/PreferenceProvider.kt
           python3 .github/scripts/port_official_main_statusbar.py
+          # Upstream Reflect.kt contains unrelated trailing spaces; whitespace-only cleanup.
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('hook/src/main/java/io/github/soclear/oneuix/hook/util/Reflect.kt')
+          original = path.read_text()
+          cleaned = '\n'.join(line.rstrip(' \t') for line in original.split('\n'))
+          assert cleaned.replace(' ', '').replace('\t', '') == original.replace(' ', '').replace('\t', '')
+          path.write_text(cleaned)
+          PY
           git add -A
           test -z "$(git diff --name-only --diff-filter=U)"
           git diff --cached --check
