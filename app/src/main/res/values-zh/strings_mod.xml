@@ -1,0 +1,16 @@
+<resources>
+    <string name="statusBarDoubleLineClockSize_title">状态栏双行时间大小</string>
+    <string name="statusBarDoubleLineClockSize_summary">较大字号在部分设备上可能空间不足。</string>
+    <string name="statusBarDoubleLineClockSize_small">小</string>
+    <string name="statusBarDoubleLineClockSize_compact">较小</string>
+    <string name="statusBarDoubleLineClockSize_standard">标准（推荐）</string>
+    <string name="statusBarDoubleLineClockSize_large">较大</string>
+    <string name="statusBarDoubleLineClockSize_extraLarge">大</string>
+    <string name="statusBarDoubleLineClockGap_title">双行时间上下间距</string>
+    <string name="statusBarDoubleLineClockGap_summary">当前间距：%1$.1f dp；修改后立即生效。</string>
+    <string name="fold7CustomDoubleLineClockScale_title">使用自定义双行文字大小</string>
+    <string name="fold7DoubleLineClockTimeScale_title">上行文字倍率</string>
+    <string name="fold7DoubleLineClockTimeScale_summary">当前上行倍率：%1$.2f×</string>
+    <string name="fold7DoubleLineClockDateScale_title">下行文字倍率</string>
+    <string name="fold7DoubleLineClockDateScale_summary">当前下行倍率：%1$.2f×</string>
+</resources>
