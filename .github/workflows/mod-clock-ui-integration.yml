@@ -18,36 +18,38 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
           p = Path('app/src/main/java/io/github/soclear/oneuix/ui/category/DetailPaneSystemUI.kt')
           s = p.read_text()
-          old = '''                            label = try {
-                                DateTimeFormatter
-                                    .ofPattern(tempDataTimeFormat)
-                                    .format(LocalDateTime.now())
-                            } catch (_: Throwable) {'''
-          new = '''                            label = try {
-                                // MOD tokens are not Java DateTimeFormatter patterns.
-                                // Validate the standard fragments while preserving custom tokens.
-                                val customTokens = Regex("CNLUNAR|CNPERIOD|CNTIME|CNYEAR|CNZODIAC|CNSEASON")
-                                val preview = StringBuilder()
-                                var cursor = 0
-                                customTokens.findAll(tempDataTimeFormat).forEach { match ->
-                                    val standard = tempDataTimeFormat.substring(cursor, match.range.first)
-                                    if (standard.isNotEmpty()) {
-                                        preview.append(DateTimeFormatter.ofPattern(standard).format(LocalDateTime.now()))
-                                    }
-                                    preview.append(match.value)
-                                    cursor = match.range.last + 1
-                                }
-                                val trailing = tempDataTimeFormat.substring(cursor)
-                                if (trailing.isNotEmpty()) {
-                                    preview.append(DateTimeFormatter.ofPattern(trailing).format(LocalDateTime.now()))
-                                }
-                                preview.toString()
-                            } catch (_: Throwable) {'''
-          if s.count(old) != 1:
-              raise SystemExit(f'Expected exactly one original clock validator, found {s.count(old)}; refusing to modify')
-          p.write_text(s.replace(old, new, 1))
+          old = re.compile(r'(?m)^(?P<indent>[ \t]*)label = try \{\n[ \t]*DateTimeFormatter\n[ \t]*\.ofPattern\(tempDataTimeFormat\)\n[ \t]*\.format\(LocalDateTime\.now\(\)\)\n[ \t]*\} catch \(_: Throwable\) \{')
+          matches = list(old.finditer(s))
+          if len(matches) != 1:
+              raise SystemExit(f'Expected exactly one original clock validator, found {len(matches)}; refusing to modify')
+          indent = matches[0].group('indent')
+          body = [
+              'label = try {',
+              '    // MOD tokens are not Java DateTimeFormatter patterns.',
+              '    val customTokens = Regex("CNLUNAR|CNPERIOD|CNTIME|CNYEAR|CNZODIAC|CNSEASON")',
+              '    val preview = StringBuilder()',
+              '    var cursor = 0',
+              '    customTokens.findAll(tempDataTimeFormat).forEach { match ->',
+              '        val standard = tempDataTimeFormat.substring(cursor, match.range.first)',
+              '        if (standard.isNotEmpty()) {',
+              '            preview.append(DateTimeFormatter.ofPattern(standard).format(LocalDateTime.now()))',
+              '        }',
+              '        preview.append(match.value)',
+              '        cursor = match.range.last + 1',
+              '    }',
+              '    val trailing = tempDataTimeFormat.substring(cursor)',
+              '    if (trailing.isNotEmpty()) {',
+              '        preview.append(DateTimeFormatter.ofPattern(trailing).format(LocalDateTime.now()))',
+              '    }',
+              '    preview.toString()',
+              '} catch (_: Throwable) {',
+          ]
+          replacement = '\n'.join(indent + line for line in body)
+          s = s[:matches[0].start()] + replacement + s[matches[0].end():]
+          p.write_text(s)
           print('Updated clock validator; all other settings preserved')
           PY
       - name: Commit only validated settings change
