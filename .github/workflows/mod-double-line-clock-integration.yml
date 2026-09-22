@@ -1,0 +1,45 @@
+name: Integrate MOD double-line clock
+on:
+  push:
+    paths:
+      - '.github/workflows/mod-double-line-clock-integration.yml'
+permissions:
+  contents: write
+jobs:
+  integrate:
+    if: github.ref_name == 'upstream-180-mod-ci-staging'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: true
+      - name: Patch SystemUI clock view safely
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('hook/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt')
+          source = path.read_text()
+          old = '''                val dateTime = block()
+                clockTextView?.text = dateTime
+                clockTextView?.contentDescription = dateTime
+                null'''
+          new = '''                val dateTime = block()
+                // Keep upstream's single-line layout unchanged. A custom MOD format
+                // containing a newline must not be collapsed into a single line.
+                if (dateTime.contains('\\n')) {
+                    clockTextView?.apply {
+                        setSingleLine(false)
+                        maxLines = 2
+                        includeFontPadding = false
+                    }
+                }
+                clockTextView?.text = dateTime
+                clockTextView?.contentDescription = dateTime
+                null'''
+          assert source.count(old) == 1, 'Expected exactly one clock update hook'
+          path.write_text(source.replace(old, new, 1))
+          PY
+          git diff --check
+          git add hook/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'feat(systemui): preserve MOD double-line clock text layout'
+          git push
