@@ -22,7 +22,7 @@ jobs:
         run: |
           set -euo pipefail
           MAIN=92312ebcfe7ab36cf18a55e90af8a0f5dfebb314
-          UPSTREAM=7aa73a036e066e79e6e2306256229dbe9f88dbb1
+          UPSTREAM=8c67e23118a91b3defd04147b88f32be689e24b1
           test "$GITHUB_REF_NAME" = upgrade/from-main-upstream-180-20260922
           test -z "$(git status --porcelain)"
           git fetch origin main
@@ -31,7 +31,7 @@ jobs:
           git remote add upstream https://github.com/SoClear/OneUIX.git
           git fetch --no-tags upstream main
           test "$(git rev-parse upstream/main)" = "$UPSTREAM"
-          echo 'Production MOD and upstream 1.8.0 SHAs verified.'
+          echo 'Production MOD and current upstream SHAs verified.'
       - name: Merge upstream and explicitly resolve eight audited conflicts
         run: |
           set -euo pipefail
@@ -53,11 +53,8 @@ jobs:
           print('AUDITED_CONFLICTS:', *sorted(actual), sep='\n')
           assert actual == expected, (actual - expected, expected - actual)
           PY
-          # Official MOD CI/release workflows take precedence over upstream's other signing key.
           git checkout --ours .github/workflows/ci.yml .github/workflows/release.yml
-          # Adopt upstream's new Gradle modules/manifest and libxposed entrypoint.
           git checkout --theirs app/build.gradle.kts app/src/main/AndroidManifest.xml hook/src/main/java/io/github/soclear/oneuix/hook/Main.kt
-          # Never compile duplicate legacy hooks; main-specific algorithms are ported below.
           git rm -f app/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt
           git rm -f app/src/main/java/io/github/soclear/oneuix/hook/util/PreferenceProvider.kt
           python3 .github/scripts/port_official_main_statusbar.py
@@ -69,8 +66,7 @@ jobs:
           grep -F 'DoubleLineClockStyle(0.82f, 0.76f, 0.66f, -0.65f)' hook/src/main/java/io/github/soclear/oneuix/hook/systemui/OfficialMainStatusBarMod.kt
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'feat(upgrade): port production-main MOD status bar onto upstream 1.8.0 architecture'
-          # The ONLY writable ref is this main-derived test branch. Never push main.
+          git commit -m 'feat(upgrade): port production-main MOD status bar onto latest upstream architecture'
           git push origin HEAD:refs/heads/upgrade/from-main-upstream-180-20260922
       - name: Compile migrated source and run common tests
         run: |
