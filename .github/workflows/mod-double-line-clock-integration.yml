@@ -19,23 +19,16 @@ jobs:
           from pathlib import Path
           path = Path('hook/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt')
           source = path.read_text()
-          old = '''                val dateTime = block()
-                clockTextView?.text = dateTime
-                clockTextView?.contentDescription = dateTime
-                null'''
+          old = '                val dateTime = block()'
           new = '''                val dateTime = block()
-                // Keep upstream's single-line layout unchanged. A custom MOD format
-                // containing a newline must not be collapsed into a single line.
-                if (dateTime.contains('\\n')) {
+                // Preserve upstream single-line layout; enable multiline only for MOD formats.
+                if (dateTime.indexOf(10.toChar()) >= 0) {
                     clockTextView?.apply {
                         setSingleLine(false)
                         maxLines = 2
                         includeFontPadding = false
                     }
-                }
-                clockTextView?.text = dateTime
-                clockTextView?.contentDescription = dateTime
-                null'''
+                }'''
           assert source.count(old) == 1, 'Expected exactly one clock update hook'
           path.write_text(source.replace(old, new, 1))
           PY
