@@ -15,10 +15,14 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.text.SpannableString
+import android.text.Spanned
 import android.text.TextUtils
+import android.text.style.RelativeSizeSpan
 import java.util.WeakHashMap
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface
+import io.github.soclear.oneuix.common.DoubleLineClockSettings
 import io.github.soclear.oneuix.common.ONE_UI_VERSION
 import io.github.soclear.oneuix.common.Package
 import io.github.soclear.oneuix.hook.util.afterAttach
@@ -213,13 +217,44 @@ object StatusBar {
     }
 
     context(xposedModule: XposedModule, param: XposedModuleInterface.PackageReadyParam)
-    fun setStatusBarClockFormat(format: String) {
+    fun setStatusBarClockFormat(
+        format: String,
+        doubleLinePreset: String = "standard",
+        doubleLineGapDp: Float = 0f,
+        useIndependentDoubleLineScale: Boolean = false,
+        upperLineScale: Float = 1f,
+        lowerLineScale: Float = 1f,
+    ) {
         if (param.packageName != Package.SYSTEMUI) return
-        setStatusBarClockText { StatusBarClockFormatSupport.format(format) }
+
+        val presetScale = DoubleLineClockSettings.presetScale(doubleLinePreset)
+        val upperScale = if (useIndependentDoubleLineScale) {
+            DoubleLineClockSettings.timeScale(upperLineScale)
+        } else {
+            presetScale
+        }
+        val lowerScale = if (useIndependentDoubleLineScale) {
+            DoubleLineClockSettings.dateScale(lowerLineScale)
+        } else {
+            presetScale
+        }
+        val lineGapDp = DoubleLineClockSettings.lineGapDp(doubleLineGapDp)
+
+        setStatusBarClockText(
+            block = { StatusBarClockFormatSupport.format(format) },
+            upperLineScale = upperScale,
+            lowerLineScale = lowerScale,
+            lineGapDp = lineGapDp,
+        )
     }
 
     context(xposedModule: XposedModule, param: XposedModuleInterface.PackageReadyParam)
-    private fun setStatusBarClockText(block: () -> String) = afterAttach {
+    private fun setStatusBarClockText(
+        block: () -> String,
+        upperLineScale: Float = 1f,
+        lowerLineScale: Float = 1f,
+        lineGapDp: Float = 0f,
+    ) = afterAttach {
         if (param.packageName != Package.SYSTEMUI) return@afterAttach
         try {
             val clockClass = param.classLoader.loadClass(
@@ -233,7 +268,8 @@ object StatusBar {
                 val clockTextView = chain.thisObject as? TextView
                 val dateTime = block()
                 clockTextView?.apply {
-                    if (dateTime.indexOf(10.toChar()) >= 0) {
+                    val lineBreak = dateTime.indexOf('\n')
+                    if (lineBreak >= 0) {
                         if (!originalClockTextStates.containsKey(this)) {
                             originalClockTextStates[this] = OriginalClockTextState(
                                 includeFontPadding = includeFontPadding,
@@ -246,6 +282,26 @@ object StatusBar {
                         includeFontPadding = false
                         ellipsize = null
                         setHorizontallyScrolling(false)
+                        setLineSpacing(lineGapDp * resources.displayMetrics.density, 1f)
+
+                        val styledText = SpannableString(dateTime)
+                        if (lineBreak > 0) {
+                            styledText.setSpan(
+                                RelativeSizeSpan(upperLineScale),
+                                0,
+                                lineBreak,
+                                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+                            )
+                        }
+                        if (lineBreak + 1 < styledText.length) {
+                            styledText.setSpan(
+                                RelativeSizeSpan(lowerLineScale),
+                                lineBreak + 1,
+                                styledText.length,
+                                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+                            )
+                        }
+                        text = styledText
                     } else {
                         setSingleLine(true)
                         maxLines = 1
@@ -255,10 +311,10 @@ object StatusBar {
                             ellipsize = original.ellipsize
                         }
                         setLineSpacing(0f, 1f)
+                        text = dateTime
                     }
+                    contentDescription = dateTime.replace('\n', ' ')
                 }
-                clockTextView?.text = dateTime
-                clockTextView?.contentDescription = dateTime.replace(10.toChar(), ' ')
                 null
             }
         } catch (t: Throwable) {
