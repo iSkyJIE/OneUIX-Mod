@@ -1,5 +1,6 @@
 name: Build isolated production-signed release test
 
+# Test branch only: this workflow uploads a QA artifact; it never publishes a Release.
 on:
   push:
     branches:
@@ -29,7 +30,7 @@ jobs:
           distribution: zulu
           java-version: '25'
           cache: gradle
-      - name: Check official MOD main and upstream ancestry
+      - name: Check official MOD main, version and every translated app name
         run: |
           set -euo pipefail
           git merge-base --is-ancestor 92312ebcfe7ab36cf18a55e90af8a0f5dfebb314 HEAD
@@ -40,6 +41,8 @@ jobs:
           for resource in app/src/main/res/values{,-zh,-fr,-ru,-ko}/strings.xml; do
             grep -F '<string name="app_name">OneUIX MOD</string>' "$resource"
           done
+          grep -F 'types: [created]' .github/workflows/release.yml
+          grep -F 'softprops/action-gh-release@v2' .github/workflows/release.yml
           curl --fail --location --retry 3 --silent --show-error \
             https://github.com/iSkyJIE/OneUIX-Mod/releases/download/v1.0.0/OneUIX-Mod_v1.0.0.apk \
             --output production.apk
