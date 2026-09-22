@@ -1,0 +1,246 @@
+name: Restore MOD regressions (one shot)
+on:
+  push:
+    branches: [upstream-180-mod-ci-staging]
+    paths: ['.github/workflows/restore-mod-regressions.yml']
+permissions:
+  contents: write
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: true
+      - name: Apply guarded minimal MOD restorations
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          def read(p): return Path(p).read_text(encoding='utf-8')
+          def write(p,s): Path(p).write_text(s,encoding='utf-8')
+          def replace(s,old,new):
+              count=s.count(old)
+              if count!=1: raise RuntimeError(f'Expected unique anchor ({count}): {old[:100]!r}')
+              return s.replace(old,new,1)
+          base='app/src/main/java/io/github/soclear/oneuix/ui/category/DetailPaneSystemUI.kt'
+          p='common/src/main/java/io/github/soclear/oneuix/common/Preference.kt'
+          s=read(p)
+          s=replace(s,'            val statusBarRightPaddingDp: Float = 0f,\n','            val statusBarRightPaddingDp: Float = 0f,\n            val statusBarTopPaddingDp: Float = 0f,\n            val statusBarBottomPaddingDp: Float = 0f,\n')
+          s=replace(s,'            val doubleLineClockGapDp: Float = 0f,','            val doubleLineClockGapDp: Float = 1f,')
+          write(p,s)
+          p=base; s=read(p)
+          s=replace(s,'import android.os.Build\n','import android.os.Build\nimport android.widget.Toast\nimport androidx.compose.ui.platform.LocalContext\nimport androidx.compose.runtime.rememberCoroutineScope\nimport kotlinx.coroutines.Dispatchers\nimport kotlinx.coroutines.launch\nimport kotlinx.coroutines.withContext\nimport java.util.concurrent.TimeUnit\n')
+          s=replace(s,'        Spacer(modifier = Modifier.height(30.dp))\n        Button(\n            modifier = Modifier.align(Alignment.CenterHorizontally),\n            onClick = {\n                runCatching { Runtime.getRuntime().exec("su -c killall com.android.systemui") }\n            }\n        ) {','''        Spacer(modifier = Modifier.height(30.dp))
+        val context = LocalContext.current
+        val restartScope = rememberCoroutineScope()
+        Button(
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+            onClick = {
+                restartScope.launch {
+                    val restarted = withContext(Dispatchers.IO) {
+                        runCatching {
+                            val process = ProcessBuilder("su", "-c", "killall com.android.systemui").start()
+                            process.waitFor(5, TimeUnit.SECONDS) && process.exitValue() == 0
+                        }.getOrDefault(false)
+                    }
+                    Toast.makeText(
+                        context,
+                        if (restarted) R.string.restartSystemUI_success else R.string.restartSystemUI_failed,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        ) {''')
+          s=replace(s,'        Column {\n            var widthScale by remember {','''        StatusBarVerticalPaddingControl(
+            title = stringResource(id = R.string.statusBarTopPaddingDp_title),
+            summaryRes = R.string.statusBarTopPaddingDp_summary,
+            currentValue = uiState.statusBar.statusBarTopPaddingDp,
+            onValueChangeFinished = {
+                onEvent(SystemUIEvent.StatusBar.StatusBarTopPaddingDp(it))
+            }
+        )
+        StatusBarVerticalPaddingControl(
+            title = stringResource(id = R.string.statusBarBottomPaddingDp_title),
+            summaryRes = R.string.statusBarBottomPaddingDp_summary,
+            currentValue = uiState.statusBar.statusBarBottomPaddingDp,
+            onValueChangeFinished = {
+                onEvent(SystemUIEvent.StatusBar.StatusBarBottomPaddingDp(it))
+            }
+        )
+        Column {
+            var widthScale by remember {''')
+          s=replace(s,'private fun List<PowerMenuAction>.move(fromIndex: Int, toIndex: Int): List<PowerMenuAction> =','''@Composable
+private fun StatusBarVerticalPaddingControl(
+    title: String,
+    @StringRes summaryRes: Int,
+    currentValue: Float,
+    onValueChangeFinished: (Float) -> Unit,
+) {
+    var value by remember(currentValue) { mutableFloatStateOf(currentValue.coerceIn(0f, 8f)) }
+    ListItem(
+        headlineContent = { Text(text = title) },
+        supportingContent = { Text(text = stringResource(id = summaryRes, value)) },
+        leadingContent = {
+            Icon(ImageVector.vectorResource(id = R.drawable.padding), contentDescription = null)
+        }
+    )
+    Slider(
+        value = value,
+        onValueChange = { value = it },
+        modifier = Modifier.padding(horizontal = 16.dp),
+        valueRange = 0f..8f,
+        steps = 79,
+        onValueChangeFinished = {
+            onValueChangeFinished((value * 10f).roundToInt() / 10f)
+        }
+    )
+}
+
+private fun List<PowerMenuAction>.move(fromIndex: Int, toIndex: Int): List<PowerMenuAction> =''')
+          s=replace(s,'        value class StatusBarRightPaddingDp(val value: Float) : StatusBar\n','''        value class StatusBarRightPaddingDp(val value: Float) : StatusBar
+
+        @JvmInline
+        value class StatusBarTopPaddingDp(val value: Float) : StatusBar
+
+        @JvmInline
+        value class StatusBarBottomPaddingDp(val value: Float) : StatusBar
+''')
+          s=replace(s,'            is SystemUIEvent.StatusBar.SetBatteryIconWidthScale -> {','''            is SystemUIEvent.StatusBar.StatusBarTopPaddingDp -> {
+                preference.copy(systemUI = preference.systemUI.copy(
+                    statusBar = preference.systemUI.statusBar.copy(
+                        statusBarTopPaddingDp = event.value.coerceIn(0f, 8f)
+                    )
+                ))
+            }
+
+            is SystemUIEvent.StatusBar.StatusBarBottomPaddingDp -> {
+                preference.copy(systemUI = preference.systemUI.copy(
+                    statusBar = preference.systemUI.statusBar.copy(
+                        statusBarBottomPaddingDp = event.value.coerceIn(0f, 8f)
+                    )
+                ))
+            }
+
+            is SystemUIEvent.StatusBar.SetBatteryIconWidthScale -> {''')
+          write(p,s)
+          for loc, text in {
+              'values': '''    <string name="statusBarTopPaddingDp_title">Status bar top margin</string>
+    <string name="statusBarBottomPaddingDp_title">Status bar bottom margin</string>
+    <string name="statusBarTopPaddingDp_summary">Moves both left and right areas down: %1$.1f dp</string>
+    <string name="statusBarBottomPaddingDp_summary">Moves both left and right areas up: %1$.1f dp</string>
+''',
+              'values-zh': '''    <string name="statusBarTopPaddingDp_title">状态栏顶部边距</string>
+    <string name="statusBarBottomPaddingDp_title">状态栏底部边距</string>
+    <string name="statusBarTopPaddingDp_summary">同时向下移动状态栏左侧和右侧区域：%1$.1f dp</string>
+    <string name="statusBarBottomPaddingDp_summary">同时向上移动状态栏左侧和右侧区域：%1$.1f dp</string>
+'''
+          }.items():
+              p=f'app/src/main/res/{loc}/strings.xml'; s=read(p)
+              anchor=next(x for x in s.splitlines(keepends=True) if 'name="statusBarRightPaddingDp_title"' in x)
+              s=replace(s,anchor,anchor+text)
+              if loc=='values':
+                  addition='''    <string name="restartSystemUI_success">System UI restart requested</string>
+    <string name="restartSystemUI_failed">Could not restart System UI. Grant root access and try again.</string>
+'''
+              else:
+                  addition='''    <string name="restartSystemUI_success">已请求重启系统 UI</string>
+    <string name="restartSystemUI_failed">无法重启系统 UI，请授予 Root 权限后重试。</string>
+'''
+              anchor=next(x for x in s.splitlines(keepends=True) if 'name="updateStatusBarClockEverySecond_title"' in x)
+              s=replace(s,anchor,addition+anchor)
+              write(p,s)
+          p='hook/src/main/java/io/github/soclear/oneuix/hook/Main.kt'; s=read(p)
+          s=replace(s,'import io.github.soclear.oneuix.hook.systemui.StatusBar\n','import io.github.soclear.oneuix.hook.systemui.StatusBar\nimport io.github.soclear.oneuix.hook.systemui.StatusBarVerticalPadding\n')
+          s=replace(s,'                run {\n                    val widthScale = if (preference.systemUI.statusBar.setBatteryIconWidthScale) {','''                StatusBarVerticalPadding.install(
+                    preference.systemUI.statusBar.statusBarTopPaddingDp,
+                    preference.systemUI.statusBar.statusBarBottomPaddingDp,
+                )
+
+                run {
+                    val widthScale = if (preference.systemUI.statusBar.setBatteryIconWidthScale) {''')
+          write(p,s)
+          p='hook/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBarVerticalPadding.kt'
+          if Path(p).exists(): raise RuntimeError('New helper already exists')
+          write(p,'''package io.github.soclear.oneuix.hook.systemui
+
+import android.annotation.SuppressLint
+import android.view.View
+import io.github.libxposed.api.XposedModule
+import io.github.libxposed.api.XposedModuleInterface
+import io.github.soclear.oneuix.common.Package
+import io.github.soclear.oneuix.hook.util.afterAttach
+import io.github.soclear.oneuix.hook.util.xlog
+import java.util.WeakHashMap
+import kotlin.math.roundToInt
+
+/** Restores MOD's independent vertical offsets without altering upstream's left/right hook. */
+@SuppressLint("PrivateApi", "DiscouragedApi")
+object StatusBarVerticalPadding {
+    private val originalY = WeakHashMap<View, Float>()
+    private val activeViews = WeakHashMap<View, Unit>()
+    private var shiftDp = 0f
+
+    private fun View.findArea(vararg names: String): View? {
+        for (name in names) {
+            val id = resources.getIdentifier(name, "id", Package.SYSTEMUI)
+            if (id != 0) findViewById<View>(id)?.let { return it }
+        }
+        return null
+    }
+
+    private fun apply(view: View) {
+        val left = view.findArea("status_bar_left_side", "status_bar_start_side",
+            "status_bar_start_side_content", "status_bar_left_container")
+        val right = view.findArea("system_icon_area", "status_bar_right_side",
+            "status_bar_end_side", "status_bar_end_side_content", "status_icon_area")
+        val targets = listOfNotNull(left, right).distinct().ifEmpty { listOf(view) }
+        val px = (shiftDp * view.resources.displayMetrics.density).roundToInt()
+        targets.forEach { target ->
+            val base = originalY.getOrPut(target) { target.translationY }
+            target.translationY = base + px
+        }
+    }
+
+    private fun register(view: View) {
+        if (activeViews.put(view, Unit) != null) return
+        view.addOnLayoutChangeListener { changed, _, _, _, _, _, _, _, _ ->
+            apply(changed)
+        }
+        view.post { apply(view) }
+    }
+
+    context(xposedModule: XposedModule, param: XposedModuleInterface.PackageReadyParam)
+    fun install(topDp: Float, bottomDp: Float) {
+        if (param.packageName != Package.SYSTEMUI) return
+        shiftDp = topDp.coerceIn(0f, 8f) - bottomDp.coerceIn(0f, 8f)
+        afterAttach {
+            try {
+                val statusBarClass = classLoader.loadClass(
+                    "com.android.systemui.statusbar.phone.PhoneStatusBarView")
+                // Hook every constructor, since One UI may inherit onLayout rather than override it.
+                statusBarClass.declaredConstructors.forEach { constructor ->
+                    xposedModule.hook(constructor).intercept { chain ->
+                        val result = chain.proceed()
+                        (chain.thisObject as? View)?.let { register(it) }
+                        result
+                    }
+                }
+            } catch (t: Throwable) {
+                xlog(t)
+            }
+        }
+    }
+}
+''')
+          print('Patched UI, model, Main routing, translations and isolated vertical hook.')
+          PY
+      - name: Commit only on staging
+        run: |
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/java/io/github/soclear/oneuix/ui/category/DetailPaneSystemUI.kt app/src/main/res/values/strings.xml app/src/main/res/values-zh/strings.xml common/src/main/java/io/github/soclear/oneuix/common/Preference.kt hook/src/main/java/io/github/soclear/oneuix/hook/Main.kt hook/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBarVerticalPadding.kt
+          git diff --cached --check
+          git diff --cached --quiet && { echo 'No changes produced'; exit 1; }
+          git commit -m "fix(mod): restore vertical padding controls and SystemUI restart feedback"
+          git push origin HEAD:upstream-180-mod-ci-staging
