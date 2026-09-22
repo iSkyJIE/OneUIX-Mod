@@ -15,6 +15,8 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.text.TextUtils
+import java.util.WeakHashMap
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface
 import io.github.soclear.oneuix.common.ONE_UI_VERSION
@@ -27,6 +29,13 @@ import kotlin.math.roundToInt
 
 @SuppressLint("PrivateApi")
 object StatusBar {
+    private data class OriginalClockTextState(
+        val includeFontPadding: Boolean,
+        val ellipsize: TextUtils.TruncateAt?,
+    )
+
+    private val originalClockTextStates = WeakHashMap<TextView, OriginalClockTextState>()
+
     context(xposedModule: XposedModule, param: XposedModuleInterface.PackageReadyParam)
     fun setStatusBarPaddingDp(left: Float?, right: Float?) {
         if (param.packageName != Package.SYSTEMUI ||
@@ -223,23 +232,31 @@ object StatusBar {
             xposedModule.hook(method).intercept { chain ->
                 val clockTextView = chain.thisObject as? TextView
                 val dateTime = block()
-                // Match the MOD two-line text behavior while preserving the upstream single-line path.
-      clockTextView?.apply {
-          if (dateTime.indexOf(10.toChar()) >= 0) {
-              setSingleLine(false)
-              maxLines = 2
-              minLines = 2
-              includeFontPadding = false
-              ellipsize = null
-              setHorizontallyScrolling(false)
-          } else {
-              setSingleLine(true)
-              maxLines = 1
-              minLines = 1
-              includeFontPadding = true
-              setLineSpacing(0f, 1f)
-          }
-      }
+                clockTextView?.apply {
+                    if (dateTime.indexOf(10.toChar()) >= 0) {
+                        if (!originalClockTextStates.containsKey(this)) {
+                            originalClockTextStates[this] = OriginalClockTextState(
+                                includeFontPadding = includeFontPadding,
+                                ellipsize = ellipsize,
+                            )
+                        }
+                        setSingleLine(false)
+                        maxLines = 2
+                        minLines = 2
+                        includeFontPadding = false
+                        ellipsize = null
+                        setHorizontallyScrolling(false)
+                    } else {
+                        setSingleLine(true)
+                        maxLines = 1
+                        minLines = 1
+                        originalClockTextStates.remove(this)?.let { original ->
+                            includeFontPadding = original.includeFontPadding
+                            ellipsize = original.ellipsize
+                        }
+                        setLineSpacing(0f, 1f)
+                    }
+                }
                 clockTextView?.text = dateTime
                 clockTextView?.contentDescription = dateTime.replace(10.toChar(), ' ')
                 null
