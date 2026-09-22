@@ -11,6 +11,7 @@ import io.github.soclear.oneuix.hook.systemui.Notification
 import io.github.soclear.oneuix.hook.systemui.Other
 import io.github.soclear.oneuix.hook.systemui.QS
 import io.github.soclear.oneuix.hook.systemui.StatusBar
+import io.github.soclear.oneuix.hook.systemui.StatusBarVerticalPadding
 import io.github.soclear.oneuix.hook.systemui.powermenu.PowerMenu
 import io.github.soclear.oneuix.hook.util.PreferenceProvider
 import io.github.soclear.oneuix.hook.util.addAssetPath
@@ -233,6 +234,11 @@ class Main : XposedModule() {
                         } else null
                     StatusBar.setStatusBarPaddingDp(leftPaddingDp, rightPaddingDp)
                 }
+
+                StatusBarVerticalPadding.install(
+                    preference.systemUI.statusBar.statusBarTopPaddingDp,
+                    preference.systemUI.statusBar.statusBarBottomPaddingDp,
+                )
 
                 run {
                     val widthScale = if (preference.systemUI.statusBar.setBatteryIconWidthScale) {

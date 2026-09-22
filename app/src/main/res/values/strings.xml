@@ -10,6 +10,10 @@
     <string name="aod">Always On Display</string>
     <string name="statusBarLeftPaddingDp_title">Modify status bar left padding</string>
     <string name="statusBarRightPaddingDp_title">Modify status bar right padding</string>
+    <string name="statusBarTopPaddingDp_title">Status bar top margin</string>
+    <string name="statusBarBottomPaddingDp_title">Status bar bottom margin</string>
+    <string name="statusBarTopPaddingDp_summary">Moves both left and right areas down: %1$.1f dp</string>
+    <string name="statusBarBottomPaddingDp_summary">Moves both left and right areas up: %1$.1f dp</string>
     <string name="setBatteryIconWidthScale_title">Set battery icon width scale factor</string>
     <string name="setBatteryIconHeightScale_title">Set battery icon height scale factor</string>
     <string name="hideBatteryPercentageSign_title">Hide battery percentage sign in status bar</string>
@@ -48,6 +52,8 @@
     <string name="fold7DoubleLineClockDateScale_title">Lower text scale</string>
     <string name="fold7DoubleLineClockDateScale_summary">Current lower scale: %1$.2f×</string>
     <string name="setStatusBarClockTextScale_title">Set status bar clock scale factor</string>
+    <string name="restartSystemUI_success">System UI restart requested</string>
+    <string name="restartSystemUI_failed">Could not restart System UI. Grant root access and try again.</string>
     <string name="updateStatusBarClockEverySecond_title">Update status bar clock every second</string>
     <string name="updateStatusBarClockEverySecond_summary">Also sets numbers to monospaced font</string>
     <string name="hideSecureFolderStatusBarIcon_title">Hide Secure Folder status bar icon</string>

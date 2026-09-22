@@ -1,6 +1,13 @@
 package io.github.soclear.oneuix.ui.category
 
 import android.os.Build
+import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.rememberCoroutineScope
+import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -70,6 +77,8 @@ fun DetailPaneSystemUI(
     onEvent: (SystemUIEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -79,10 +88,29 @@ fun DetailPaneSystemUI(
         Button(
             modifier = Modifier.align(Alignment.CenterHorizontally),
             onClick = {
-                runCatching { Runtime.getRuntime().exec("su -c killall com.android.systemui") }
+                coroutineScope.launch {
+                    val restarted = withContext(Dispatchers.IO) {
+                        runCatching {
+                            val process = ProcessBuilder(
+                                "su",
+                                "-c",
+                                "pid=\$(pidof com.android.systemui); " +
+                                    "if [ -n \"\$pid\" ]; then kill \$pid; " +
+                                    "else killall com.android.systemui || " +
+                                    "am force-stop com.android.systemui; fi"
+                            ).start()
+                            process.waitFor(5, TimeUnit.SECONDS) && process.exitValue() == 0
+                        }.getOrDefault(false)
+                    }
+                    Toast.makeText(
+                        context,
+                        if (restarted) R.string.restartSystemUI_success else R.string.restartSystemUI_failed,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
         ) {
-            Text(text = stringResource(CommonR.string.restartSystemUI))
+            Text(text = stringResource(R.string.restartSystemUI))
         }
         DividerText(R.string.status_bar)
         Column {
@@ -159,6 +187,22 @@ fun DetailPaneSystemUI(
                 )
             }
         }
+        StatusBarVerticalPaddingControl(
+            title = stringResource(id = R.string.statusBarTopPaddingDp_title),
+            summaryRes = R.string.statusBarTopPaddingDp_summary,
+            currentValue = uiState.statusBar.statusBarTopPaddingDp,
+            onValueChangeFinished = {
+                onEvent(SystemUIEvent.StatusBar.StatusBarTopPaddingDp(it))
+            }
+        )
+        StatusBarVerticalPaddingControl(
+            title = stringResource(id = R.string.statusBarBottomPaddingDp_title),
+            summaryRes = R.string.statusBarBottomPaddingDp_summary,
+            currentValue = uiState.statusBar.statusBarBottomPaddingDp,
+            onValueChangeFinished = {
+                onEvent(SystemUIEvent.StatusBar.StatusBarBottomPaddingDp(it))
+            }
+        )
         Column {
             var widthScale by remember {
                 mutableFloatStateOf(uiState.statusBar.batteryIconWidthScale)
@@ -1167,6 +1211,43 @@ private fun PowerMenuActionEditor(
     }
 }
 
+@Composable
+private fun StatusBarVerticalPaddingControl(
+    title: String,
+    @StringRes summaryRes: Int,
+    currentValue: Float,
+    onValueChangeFinished: (Float) -> Unit,
+) {
+    var value by remember(currentValue) { mutableFloatStateOf(currentValue) }
+    ListItem(
+        headlineContent = { Text(text = title) },
+        supportingContent = {
+            Text(
+                text = stringResource(
+                    id = summaryRes,
+                    value
+                )
+            )
+        },
+        leadingContent = {
+            Icon(
+                imageVector = ImageVector.vectorResource(id = R.drawable.padding),
+                contentDescription = null
+            )
+        }
+    )
+    Slider(
+        value = value,
+        onValueChange = { value = it },
+        modifier = Modifier.padding(horizontal = 16.dp),
+        valueRange = 0f..8f,
+        steps = 79,
+        onValueChangeFinished = {
+            onValueChangeFinished((value * 10f).roundToInt() / 10f)
+        }
+    )
+}
+
 private fun List<PowerMenuAction>.move(fromIndex: Int, toIndex: Int): List<PowerMenuAction> =
     toMutableList().apply {
         add(toIndex, removeAt(fromIndex))
@@ -1202,6 +1283,12 @@ sealed interface SystemUIEvent {
 
         @JvmInline
         value class StatusBarRightPaddingDp(val value: Float) : StatusBar
+
+        @JvmInline
+        value class StatusBarTopPaddingDp(val value: Float) : StatusBar
+
+        @JvmInline
+        value class StatusBarBottomPaddingDp(val value: Float) : StatusBar
 
         @JvmInline
         value class SetBatteryIconWidthScale(val value: Boolean) : StatusBar
@@ -1432,6 +1519,26 @@ private fun SettingViewModel.onStatusBarEvent(event: SystemUIEvent.StatusBar) {
                     systemUI = preference.systemUI.copy(
                         statusBar = preference.systemUI.statusBar.copy(
                             statusBarRightPaddingDp = event.value
+                        )
+                    )
+                )
+            }
+
+            is SystemUIEvent.StatusBar.StatusBarTopPaddingDp -> {
+                preference.copy(
+                    systemUI = preference.systemUI.copy(
+                        statusBar = preference.systemUI.statusBar.copy(
+                            statusBarTopPaddingDp = event.value
+                        )
+                    )
+                )
+            }
+
+            is SystemUIEvent.StatusBar.StatusBarBottomPaddingDp -> {
+                preference.copy(
+                    systemUI = preference.systemUI.copy(
+                        statusBar = preference.systemUI.statusBar.copy(
+                            statusBarBottomPaddingDp = event.value
                         )
                     )
                 )
