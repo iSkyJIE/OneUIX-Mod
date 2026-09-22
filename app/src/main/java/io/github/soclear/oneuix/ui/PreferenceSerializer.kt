@@ -7,30 +7,31 @@ import androidx.datastore.core.Serializer
 import androidx.datastore.dataStore
 import io.github.soclear.oneuix.XposedServiceManager
 import io.github.soclear.oneuix.common.IgnoreUnknownKeysJson
+import io.github.soclear.oneuix.common.LegacyPreferenceMigration
 import io.github.soclear.oneuix.common.Preference
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.json.decodeFromStream
-import kotlinx.serialization.json.encodeToStream
 import java.io.InputStream
 import java.io.OutputStream
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.json.encodeToStream
 
 object PreferenceSerializer : Serializer<Preference> {
     private const val TAG = "PreferenceSerializer"
 
-    @OptIn(ExperimentalSerializationApi::class)
     override suspend fun readFrom(input: InputStream): Preference = try {
         val service = XposedServiceManager.xposedService ?: return defaultValue
         val parcelFileDescriptor = service.openRemoteFile(Preference.FILE_NAME)
 
         ParcelFileDescriptor.AutoCloseInputStream(parcelFileDescriptor).use { inputStream ->
             if (inputStream.channel.size() == 0L) return defaultValue
-            IgnoreUnknownKeysJson.decodeFromStream<Preference>(inputStream)
+            val raw = inputStream.readBytes().decodeToString()
+            IgnoreUnknownKeysJson.decodeFromString<Preference>(
+                LegacyPreferenceMigration.normalize(raw)
+            )
         }
     } catch (e: Exception) {
         Log.e(TAG, "readFrom", e)
         defaultValue
     }
-
 
     @OptIn(ExperimentalSerializationApi::class)
     override suspend fun writeTo(t: Preference, output: OutputStream) {

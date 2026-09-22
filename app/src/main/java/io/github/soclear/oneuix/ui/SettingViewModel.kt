@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import io.github.soclear.oneuix.common.IgnoreUnknownKeysJson
+import io.github.soclear.oneuix.common.LegacyPreferenceMigration
 import io.github.soclear.oneuix.common.Preference
 import io.github.soclear.oneuix.ui.category.Category
 import io.github.soclear.oneuix.ui.category.CategoryAppInfo
@@ -69,8 +70,9 @@ class SettingViewModel(application: Application) : ViewModel() {
     }
 
     suspend fun restoreFrom(input: InputStream) = withContext(Dispatchers.IO) {
+        val raw = input.readBytes().decodeToString()
         val restored = IgnoreUnknownKeysJson.decodeFromString(
-            Preference.serializer(), input.readBytes().decodeToString()
+            Preference.serializer(), LegacyPreferenceMigration.normalize(raw)
         )
         dataStore.updateData { restored }
     }

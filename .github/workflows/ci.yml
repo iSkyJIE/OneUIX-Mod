@@ -22,6 +22,8 @@ jobs:
         run: chmod +x gradlew
       - name: Get Short SHA
         run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
+      - name: Test MOD preference migration
+        run: ./gradlew :common:testDebugUnitTest
       - name: Build Debug APK
         run: ./gradlew assembleDebug
       - name: Rename APK
