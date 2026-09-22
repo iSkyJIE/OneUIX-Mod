@@ -34,8 +34,8 @@ jobs:
       - name: Dry-run merge and collect unresolved path inventory
         run: |
           set -u
-          git -c user.name='OneUIX audit' -c user.email='audit@users.noreply.github.com' merge --no-commit --no-ff --no-edit upstream/main > /tmp/merge-output.log 2>&1
-          RESULT=$?
+          RESULT=0
+          git -c user.name='OneUIX audit' -c user.email='audit@users.noreply.github.com' merge --no-commit --no-ff --no-edit upstream/main > /tmp/merge-output.log 2>&1 || RESULT=$?
           echo "DRY_RUN_MERGE_EXIT_CODE=$RESULT"
           echo '===== MERGE OUTPUT ====='
           cat /tmp/merge-output.log
