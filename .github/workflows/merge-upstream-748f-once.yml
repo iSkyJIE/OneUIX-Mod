@@ -1,0 +1,35 @@
+name: Merge latest upstream class-loading fixes once
+
+on:
+  push:
+    branches:
+      - upgrade/from-main-upstream-180-20260922
+    paths:
+      - .github/workflows/merge-upstream-748f-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: upgrade/from-main-upstream-180-20260922
+          fetch-depth: 0
+      - name: Merge pinned upstream and remove this one-shot workflow
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/upgrade/from-main-upstream-180-20260922)"
+          git merge-base --is-ancestor 2cf914873e341850b9c0470d8ce32c6a48f43b06 HEAD
+          git remote add upstream https://github.com/SoClear/OneUIX.git
+          git fetch --no-tags upstream main
+          test "$(git rev-parse FETCH_HEAD)" = 748f06f0e28741b2a6df251624f7a59daeb0498f
+          git merge --no-ff --no-edit FETCH_HEAD
+          git merge-base --is-ancestor 748f06f0e28741b2a6df251624f7a59daeb0498f HEAD
+          git rm .github/workflows/merge-upstream-748f-once.yml
+          git commit -m 'chore: remove completed one-shot upstream merge workflow'
+          git push origin HEAD:refs/heads/upgrade/from-main-upstream-180-20260922
