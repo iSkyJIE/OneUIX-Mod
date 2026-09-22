@@ -1,0 +1,61 @@
+name: Integrate MOD clock settings
+on:
+  push:
+    paths:
+      - '.github/workflows/mod-clock-ui-integration.yml'
+permissions:
+  contents: write
+jobs:
+  integrate:
+    if: github.ref == 'refs/heads/upstream-180-mod-ci-staging'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Patch clock format validation without altering other settings
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/java/io/github/soclear/oneuix/ui/category/DetailPaneSystemUI.kt')
+          s = p.read_text()
+          old = '''                            label = try {
+                                DateTimeFormatter
+                                    .ofPattern(tempDataTimeFormat)
+                                    .format(LocalDateTime.now())
+                            } catch (_: Throwable) {'''
+          new = '''                            label = try {
+                                // MOD tokens are not Java DateTimeFormatter patterns.
+                                // Validate the standard fragments while preserving custom tokens.
+                                val customTokens = Regex("CNLUNAR|CNPERIOD|CNTIME|CNYEAR|CNZODIAC|CNSEASON")
+                                val preview = StringBuilder()
+                                var cursor = 0
+                                customTokens.findAll(tempDataTimeFormat).forEach { match ->
+                                    val standard = tempDataTimeFormat.substring(cursor, match.range.first)
+                                    if (standard.isNotEmpty()) {
+                                        preview.append(DateTimeFormatter.ofPattern(standard).format(LocalDateTime.now()))
+                                    }
+                                    preview.append(match.value)
+                                    cursor = match.range.last + 1
+                                }
+                                val trailing = tempDataTimeFormat.substring(cursor)
+                                if (trailing.isNotEmpty()) {
+                                    preview.append(DateTimeFormatter.ofPattern(trailing).format(LocalDateTime.now()))
+                                }
+                                preview.toString()
+                            } catch (_: Throwable) {'''
+          if s.count(old) != 1:
+              raise SystemExit(f'Expected exactly one original clock validator, found {s.count(old)}; refusing to modify')
+          p.write_text(s.replace(old, new, 1))
+          print('Updated clock validator; all other settings preserved')
+          PY
+      - name: Commit only validated settings change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src/main/java/io/github/soclear/oneuix/ui/category/DetailPaneSystemUI.kt
+          git diff --cached --check
+          git diff --cached --stat
+          git commit -m 'fix: accept MOD clock tokens in settings format validation'
+          git push origin HEAD:upstream-180-mod-ci-staging
