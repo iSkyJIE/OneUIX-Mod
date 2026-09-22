@@ -1,7 +1,6 @@
 package io.github.soclear.oneuix.common
 
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.parseToJsonElement
 
 /** Upstream 1.8 moved four production MOD values from systemUI.other to notification.
  * Keep the old keys and their actual values; only fill fields not already set in the new schema.
