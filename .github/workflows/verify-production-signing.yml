@@ -6,6 +6,18 @@ on:
       - upgrade/from-main-upstream-180-20260922
     paths:
       - .github/workflows/verify-production-signing.yml
+      - app/src/main/java/io/github/soclear/oneuix/ui/PreferenceSerializer.kt
+      - app/src/main/java/io/github/soclear/oneuix/ui/SettingViewModel.kt
+      - app/src/main/java/io/github/soclear/oneuix/ui/category/DetailPaneSystemUI.kt
+      - app/src/test/**
+      - app/build.gradle.kts
+      - app/src/main/AndroidManifest.xml
+      - common/src/main/java/io/github/soclear/oneuix/common/Preference.kt
+      - common/src/main/java/io/github/soclear/oneuix/common/ProductionPreferenceMigration.kt
+      - hook/src/main/java/io/github/soclear/oneuix/hook/Main.kt
+      - hook/src/main/java/io/github/soclear/oneuix/hook/systemui/OfficialMainStatusBarMod.kt
+      - hook/src/main/java/io/github/soclear/oneuix/hook/systemui/StatusBar.kt
+      - hook/src/main/java/io/github/soclear/oneuix/hook/util/PreferenceProvider.kt
 
 permissions:
   contents: read
