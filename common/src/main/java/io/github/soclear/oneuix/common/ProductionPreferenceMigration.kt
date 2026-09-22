@@ -36,4 +36,27 @@ object ProductionPreferenceMigration {
         updatedRoot["systemUI"] = JsonObject(updatedSystemUI)
         return IgnoreUnknownKeysJson.decodeFromString<Preference>(JsonObject(updatedRoot).toString())
     }
+
+    /** Production main's local DataStore has no sync marker. An experimental
+     * upstream remote preference file must not silently replace that original
+     * MOD configuration during the first upgrade. Once synchronized, remote
+     * settings become authoritative except for explicit offline local edits.
+     */
+    fun select(
+        local: Preference?,
+        remote: Preference?,
+        localUnsynced: Boolean,
+        localFromProduction: Boolean,
+    ): Preference {
+        val defaults = Preference()
+        return when {
+            localUnsynced && local != null -> local
+            localFromProduction && local != null && local != defaults -> local
+            remote != null && remote != defaults -> remote
+            local != null && local != defaults -> local
+            remote != null -> remote
+            local != null -> local
+            else -> defaults
+        }
+    }
 }
