@@ -36,7 +36,7 @@ jobs:
           git merge-base --is-ancestor 92312ebcfe7ab36cf18a55e90af8a0f5dfebb314 HEAD
           git merge-base --is-ancestor 8c67e23118a91b3defd04147b88f32be689e24b1 HEAD
           grep -Fx 'oneuix.applicationId=io.github.mod.oneuix' gradle.properties
-          grep -Fx '        versionCode = 11' app/build.gradle.kts
+          grep -Fx '        versionCode = 2' app/build.gradle.kts
           grep -Fx '        versionName = "1.1.0"' app/build.gradle.kts
           for resource in app/src/main/res/values{,-zh,-fr,-ru,-ko}/strings.xml; do
             grep -F '<string name="app_name">OneUIX MOD</string>' "$resource"
@@ -83,15 +83,15 @@ jobs:
           test "$NEW_CERT" = '3cca67360758a4956796fcf6d8c726daf92b581532a1bb7e81211c8107bc7e09'
           OLD_BADGING=$("$AAPT" dump badging production.apk | head -n 1)
           BADGING=$("$AAPT" dump badging "$APK")
-          echo "$BADGING" | head -n 1 | grep -F "name='io.github.mod.oneuix' versionCode='11' versionName='1.1.0'"
+          echo "$BADGING" | head -n 1 | grep -F "name='io.github.mod.oneuix' versionCode='2' versionName='1.1.0'"
           echo "$BADGING" | grep -F "application-label:'OneUIX MOD'"
           for locale in zh fr ko ru; do
             echo "$BADGING" | grep -F "application-label-${locale}:'OneUIX MOD'"
           done
           OLD_VERSION=$(printf '%s' "$OLD_BADGING" | sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p")
           test "$OLD_VERSION" = '1'
-          test 11 -gt 10
-          echo 'MOD v1.1.0 release identity, locale labels, original signature and previous-test upgrade path verified.'
+          test 2 -gt "$OLD_VERSION"
+          echo 'MOD v1.1.0 official version sequence, locale labels and original signature verified.'
           cp "$APK" app/build/outputs/apk/release/OneUIX-Mod_v1.1.0_TEST.apk
       - name: Upload nonpublished release-mode test APK
         uses: actions/upload-artifact@v7
