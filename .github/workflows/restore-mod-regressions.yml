@@ -15,6 +15,17 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: true
+      - name: Disambiguate top margin among the two historical controls
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/restore_mod_regressions.py')
+          s = p.read_text()
+          old = "legacy_controls = section(old_ui, '        StatusBarVerticalPaddingControl(\\n',"
+          new = "legacy_controls = section(old_ui, '        StatusBarVerticalPaddingControl(\\n            title = stringResource(id = R.string.statusBarTopPaddingDp_title),',"
+          assert s.count(old) == 1
+          p.write_text(s.replace(old, new, 1))
+          PY
       - name: Restore MOD features with guarded source comparison
         run: python3 scripts/restore_mod_regressions.py
       - name: Commit only the restored source files on staging
