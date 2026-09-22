@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">One UI X</string>
+    <string name="app_name">OneUIX MOD</string>
     <string name="xposed_description">Extension pour Samsung One UI</string>
     <string name="module_disabled_tip">Veuillez activer ce module dans LSPosed</string>
     <string name="confirm">Confirmer</string>
