@@ -30,11 +30,11 @@ jobs:
           distribution: zulu
           java-version: '25'
           cache: gradle
-      - name: Check official MOD main, version and every translated app name
+      - name: Check official MOD main, latest upstream, version and translated app names
         run: |
           set -euo pipefail
           git merge-base --is-ancestor 92312ebcfe7ab36cf18a55e90af8a0f5dfebb314 HEAD
-          git merge-base --is-ancestor 8c67e23118a91b3defd04147b88f32be689e24b1 HEAD
+          git merge-base --is-ancestor 748f06f0e28741b2a6df251624f7a59daeb0498f HEAD
           grep -Fx 'oneuix.applicationId=io.github.mod.oneuix' gradle.properties
           grep -Fx '        versionCode = 2' app/build.gradle.kts
           grep -Fx '        versionName = "1.1.0"' app/build.gradle.kts
