@@ -35,8 +35,8 @@ jobs:
           git merge-base --is-ancestor 3b293ce63ec110e3bd42106d41eb1c38a73249ef HEAD
           git merge-base --is-ancestor 4adebea56d00369dc6cd51c2718d44b16120551d HEAD
           grep -Fx 'oneuix.applicationId=io.github.mod.oneuix' gradle.properties
-          grep -Fx '        versionCode = 2' app/build.gradle.kts
-          grep -Fx '        versionName = "1.1.0"' app/build.gradle.kts
+          grep -Fx '        versionCode = 3' app/build.gradle.kts
+          grep -Fx '        versionName = "1.2.0"' app/build.gradle.kts
           for resource in app/src/main/res/values{,-zh,-fr,-ru,-ko}/strings.xml; do
             grep -F '<string name="app_name">OneUIX MOD</string>' "$resource"
           done
@@ -83,18 +83,18 @@ jobs:
           test "$NEW_CERT" = '3cca67360758a4956796fcf6d8c726daf92b581532a1bb7e81211c8107bc7e09'
           PROD_BADGING=$("$AAPT" dump badging production.apk | head -n 1)
           BADGING=$("$AAPT" dump badging "$APK")
-          echo "$BADGING" | head -n 1 | grep -F "name='io.github.mod.oneuix' versionCode='2' versionName='1.1.0'"
+          echo "$BADGING" | head -n 1 | grep -F "name='io.github.mod.oneuix' versionCode='3' versionName='1.2.0'"
           echo "$BADGING" | grep -F "application-label:'OneUIX MOD'"
           for locale in zh fr ko ru; do
             echo "$BADGING" | grep -F "application-label-${locale}:'OneUIX MOD'"
           done
           PROD_VERSION=$(printf '%s' "$PROD_BADGING" | sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p")
           test "$PROD_VERSION" = '2'
-          cp "$APK" app/build/outputs/apk/release/OneUIX-Mod_v1.1.0_upstream-1.9.0_SIGNED_TEST.apk
+          cp "$APK" app/build/outputs/apk/release/OneUIX-Mod_v1.2.0_upstream-1.9.0_SIGNED_TEST.apk
       - name: Upload signed nonpublished test APK
         uses: actions/upload-artifact@v7
         with:
-          name: OneUIX-Mod_v1.1.0_upstream-1.9.0_SIGNED_TEST
-          path: app/build/outputs/apk/release/OneUIX-Mod_v1.1.0_upstream-1.9.0_SIGNED_TEST.apk
+          name: OneUIX-Mod_v1.2.0_upstream-1.9.0_SIGNED_TEST
+          path: app/build/outputs/apk/release/OneUIX-Mod_v1.2.0_upstream-1.9.0_SIGNED_TEST.apk
           retention-days: 7
           archive: false
